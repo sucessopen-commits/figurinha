@@ -48,9 +48,9 @@ export async function generateSoccerSticker(
 const generateSoccerStickerPrompt = ai.definePrompt({
   name: 'generateSoccerStickerPrompt',
   input: {schema: GenerateSoccerStickerInputSchema},
-  model: 'googleai/gemini-2.5-flash', // Use the default model from genkit.ts
+  model: 'googleai/gemini-2.5-flash-image', // Use the model that supports image generation output
   config: {
-    responseModalities: ['IMAGE'], // Crucially, request an image output
+    responseModalities: ['TEXT', 'IMAGE'], // Must provide both TEXT and IMAGE for image generation models
   },
   prompt: `You are an expert soccer card designer. Your task is to transform the provided child's photo into a high-quality stylized soccer sticker card. Strictly maintain the child's likeness. Apply the following details onto the card in a visually appealing, sporty, and energetic design, fitting a "Figurinha Craque" theme. The background should be soccer-themed, maybe a stadium or a field, to enhance the visual. The card must look like a professional collectible soccer card.
 
@@ -61,7 +61,7 @@ Club: {{{club}}}
 Weight: {{{weight}}} kg
 Height: {{{height}}} cm
 
-The output should be a single image data URI of the completed soccer sticker card. Do not include any text, only the image data URI in the response.
+The output should be the completed soccer sticker card image.
 Child's Photo: {{media url=photoDataUri}}`,
 });
 
