@@ -602,7 +602,7 @@ export default function QuizPage() {
                   <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
                 </div>
 
-                <div className="relative w-full max-w-[320px] mx-auto bg-white shadow-2xl overflow-hidden border border-gray-100">
+                <div className="relative w-full max-w-[320px] mx-auto">
                   <div className="relative w-full aspect-[3/4]">
                     <Image 
                       src="https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png" 
