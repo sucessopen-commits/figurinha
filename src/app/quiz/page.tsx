@@ -22,7 +22,8 @@ import {
   Play,
   Trophy,
   Gift,
-  ArrowRight
+  ArrowRight,
+  Shirt
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -36,7 +37,7 @@ type QuizData = {
   photoDataUri: string;
 };
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 export default function QuizPage() {
   const router = useRouter();
@@ -98,7 +99,7 @@ export default function QuizPage() {
   }, [step]);
 
   useEffect(() => {
-    if (step === 7 && !result) {
+    if (step === 7) {
       const phrases = [
         "Ajustando uniforme...",
         "Preparando o estilo da figurinha...",
@@ -113,7 +114,7 @@ export default function QuizPage() {
       }, 2500);
       return () => clearInterval(interval);
     }
-  }, [step, result]);
+  }, [step]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -173,13 +174,13 @@ export default function QuizPage() {
     
     const interval = setInterval(() => {
       setLoadingProgress((prev) => {
-        if (prev >= 95) {
+        if (prev >= 98) {
           clearInterval(interval);
-          return 95;
+          return 98;
         }
-        return prev + Math.random() * 10;
+        return prev + Math.random() * 5;
       });
-    }, 400);
+    }, 600);
 
     try {
       const { stickerMediaUri } = await generateSoccerSticker({
@@ -206,7 +207,7 @@ export default function QuizPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white">
       <div className="w-full max-w-lg space-y-6">
         
-        {step < 5 && step !== 7 && (
+        {step < 5 && step !== 7 && step !== 8 && (
           <div className="space-y-4">
             <div className="flex justify-between items-center px-1">
               <span className="text-primary font-bold text-sm tracking-widest uppercase">
@@ -505,120 +506,146 @@ export default function QuizPage() {
             )}
 
             {step === 7 && (
-              <div className="space-y-6 animate-in fade-in duration-500 text-center">
-                {!result ? (
-                  <div className="space-y-6">
-                    <div className="text-center space-y-1">
-                      <h2 className="font-headline text-3xl text-primary uppercase">GERANDO SUA FIGURINHA</h2>
-                      <p className="text-muted-foreground text-xs font-bold">Não saia dessa tela, leva até 2 minutos.</p>
-                    </div>
+              <div className="space-y-8 animate-in fade-in duration-500 text-center">
+                <div className="space-y-2">
+                  <h2 className="font-headline text-3xl text-primary uppercase">GERANDO SUA FIGURINHA</h2>
+                  <p className="text-muted-foreground text-xs font-bold">Não saia dessa tela, leva até 2 minutos.</p>
+                </div>
 
-                    <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 flex flex-col items-center justify-center space-y-4">
-                      <div className="absolute top-4 left-4 right-4 bg-primary/10 py-2 rounded-xl">
-                        <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Assista enquanto fica pronto</p>
-                      </div>
-                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                        <Play className="text-white fill-white w-6 h-6 ml-1" />
-                      </div>
-                      <div className="px-6">
-                        <p className="text-primary font-headline text-xl uppercase opacity-40">Espaço Reservado para VSL</p>
-                        <p className="text-xs text-muted-foreground mt-2 italic">Apresentação exclusiva</p>
-                      </div>
-                    </div>
+                <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 flex flex-col items-center justify-center group">
+                  <div className="absolute top-4 left-4 right-4 bg-primary/10 py-2 rounded-xl z-10">
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Assista enquanto fica pronto</p>
+                  </div>
+                  
+                  {/* Figurinha de apoio visual */}
+                  <div className="absolute -right-6 top-1/4 w-24 h-32 rotate-12 opacity-40 grayscale blur-[1px] hidden md:block">
+                     <Image src="https://i.postimg.cc/d1PGPQDM/Chat-GPT-Image-5-de-jun-de-2026-03-22-48.png" alt="Exemplo" fill className="object-cover rounded-xl" />
+                  </div>
 
-                    <div className="bg-accent/5 border-2 border-accent/20 p-5 rounded-2xl space-y-3 shadow-sm relative overflow-hidden group">
-                      <div className="absolute -top-4 -right-4 w-12 h-12 bg-accent/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
-                      
-                      <p className="text-primary font-bold text-xs uppercase tracking-tight">
-                        AO GARANTIR SUA FIGURINHA HOJE, VOCÊ CONCORRE A:
-                      </p>
+                  <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform">
+                    <Play className="text-white fill-white w-6 h-6 ml-1" />
+                  </div>
+                  
+                  <div className="px-6 mt-4">
+                    <p className="text-primary font-headline text-xl uppercase opacity-40">Espaço Reservado para VSL</p>
+                    <p className="text-xs text-muted-foreground mt-2 italic">Apresentação exclusiva</p>
+                  </div>
+                </div>
 
-                      <div className="space-y-2">
-                        <div className="bg-white/80 p-3 rounded-xl border border-accent/20 flex items-center gap-3">
-                          <Trophy className="w-6 h-6 text-accent shrink-0" />
-                          <p className="text-left text-[11px] font-bold text-primary leading-tight uppercase">
-                            🎽 1 Camisa Original Autografada por Jogadores do Brasil
-                          </p>
+                <div className="space-y-4">
+                  <h3 className="font-headline text-2xl text-primary uppercase leading-none tracking-tight">
+                    ALÉM DA FIGURINHA, VOCÊ TAMBÉM CONCORRE A:
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-white border-2 border-primary/10 p-5 rounded-[24px] shadow-sm relative overflow-hidden group">
+                      <div className="flex items-center gap-4 text-left">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Shirt className="w-6 h-6 text-primary" />
                         </div>
-                        
-                        <p className="text-[10px] font-black text-primary/30">OU</p>
+                        <p className="text-primary font-bold text-sm leading-tight uppercase">
+                          🎽 1 Camisa Original Autografada por Jogadores do Brasil
+                        </p>
+                      </div>
+                    </div>
 
-                        <div className="bg-accent p-3 rounded-xl flex items-center gap-3 shadow-md shadow-accent/20">
-                          <Gift className="w-6 h-6 text-white shrink-0" />
-                          <p className="text-left text-sm font-bold text-white uppercase tracking-tighter">
+                    <div className="font-headline text-xl text-primary/30 uppercase">OU</div>
+
+                    <div className="bg-accent/10 border-2 border-accent/30 p-5 rounded-[24px] shadow-md shadow-accent/5">
+                      <div className="flex items-center gap-4 text-left">
+                        <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
+                          <DollarSign className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-accent font-black text-xl leading-none uppercase tracking-tighter">
                             💸 R$1.000 NO PIX
                           </p>
                         </div>
                       </div>
-
-                      <p className="text-[10px] text-primary/60 font-medium">
-                        Seu número da sorte será enviado após a confirmação.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <p className="text-primary font-bold text-sm italic">{processingText}</p>
-                        <div className="flex justify-between items-end text-primary font-black text-[10px] uppercase">
-                          <span>Processando...</span>
-                          <span>{Math.round(loadingProgress)}%</span>
-                        </div>
-                        <Progress value={loadingProgress} className="h-2 bg-primary/10" />
-                      </div>
-
-                      <Button className="w-full h-16 text-lg font-bold bg-primary rounded-full shadow-xl shadow-primary/30 pulse-button uppercase tracking-tight">
-                        QUERO PARTICIPAR E RECEBER MINHA FIGURINHA
-                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                    <div className="text-center space-y-1">
-                      <span className="text-5xl">⚽</span>
-                      <h2 className="font-headline text-5xl text-primary uppercase leading-none mt-2">GOOLL!</h2>
-                      <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
-                    </div>
 
-                    <div className="relative aspect-[3/4] max-w-[280px] mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-primary">
-                       <Image src={result} alt="Figurinha Preview" fill className="object-cover" />
-                       <div className="absolute inset-0 watermark-overlay opacity-60 pointer-events-none" />
-                    </div>
+                  <p className="text-[11px] text-primary/60 font-bold uppercase tracking-tight">
+                    Após garantir sua figurinha, você participa automaticamente do sorteio.
+                  </p>
+                </div>
 
-                    <div className="space-y-4 pt-2">
-                      <div className="flex flex-col items-center">
-                        <span className="text-muted-foreground line-through text-sm">De R$ 69,90</span>
-                        <div className="flex items-start gap-1">
-                          <span className="text-accent font-bold text-xl mt-1">R$</span>
-                          <span className="text-accent font-headline text-6xl leading-none">12,90</span>
-                        </div>
-                        <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
-                          OFERTA EXCLUSIVA DE LANÇAMENTO
-                        </p>
-                      </div>
-
-                      <Button className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/40 pulse-button flex flex-col items-center justify-center leading-none">
-                        <span>RECEBER MINHA FIGURINHA</span>
-                        <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Acesso imediato via e-mail</span>
-                      </Button>
-                      
-                      <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => {
-                        setStep(1);
-                        setResult(null);
-                        setFormData({
-                          childName: "",
-                          birthDate: "",
-                          email: "",
-                          weight: 30,
-                          height: 120,
-                          club: "",
-                          photoDataUri: "",
-                        });
-                      }}>
-                        CRIAR OUTRA FIGURINHA
-                      </Button>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-1">
+                    <p className="text-primary font-bold text-sm italic">{processingText}</p>
+                    <div className="flex justify-between items-end text-primary font-black text-[10px] uppercase">
+                      <span>Processando...</span>
+                      <span>{Math.round(loadingProgress)}%</span>
                     </div>
+                    <Progress value={loadingProgress} className="h-2 bg-primary/10" />
                   </div>
-                )}
+
+                  <Button 
+                    className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/30 pulse-button flex flex-col items-center justify-center leading-none px-4"
+                    onClick={() => setStep(8)}
+                    disabled={!result}
+                  >
+                    <span>QUERO PARTICIPAR E RECEBER MINHA FIGURINHA</span>
+                    <span className="text-[10px] font-medium opacity-80 mt-2 uppercase tracking-widest">
+                      {result ? "Clique para finalizar" : "Preparando sua figurinha..."}
+                    </span>
+                  </Button>
+                </div>
+
+                <div className="text-center opacity-60">
+                   <p className="text-[10px] font-bold text-primary flex items-center justify-center gap-1 uppercase">
+                     <ShieldCheck className="w-3 h-3" /> Seus dados estão protegidos
+                   </p>
+                </div>
+              </div>
+            )}
+
+            {step === 8 && (
+              <div className="space-y-6 animate-in zoom-in-95 duration-500 text-center">
+                <div className="text-center space-y-1">
+                  <span className="text-5xl">⚽</span>
+                  <h2 className="font-headline text-5xl text-primary uppercase leading-none mt-2">GOOLL!</h2>
+                  <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
+                </div>
+
+                <div className="relative aspect-[3/4] max-w-[280px] mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-primary">
+                   {result && <Image src={result} alt="Figurinha Preview" fill className="object-cover" />}
+                   <div className="absolute inset-0 watermark-overlay opacity-60 pointer-events-none" />
+                </div>
+
+                <div className="space-y-4 pt-2">
+                  <div className="flex flex-col items-center">
+                    <span className="text-muted-foreground line-through text-sm">De R$ 69,90</span>
+                    <div className="flex items-start gap-1">
+                      <span className="text-accent font-bold text-xl mt-1">R$</span>
+                      <span className="text-accent font-headline text-6xl leading-none">12,90</span>
+                    </div>
+                    <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
+                      OFERTA EXCLUSIVA DE LANÇAMENTO
+                    </p>
+                  </div>
+
+                  <Button className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/40 pulse-button flex flex-col items-center justify-center leading-none">
+                    <span>RECEBER MINHA FIGURINHA</span>
+                    <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Acesso imediato via e-mail</span>
+                  </Button>
+                  
+                  <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => {
+                    setStep(1);
+                    setResult(null);
+                    setFormData({
+                      childName: "",
+                      birthDate: "",
+                      email: "",
+                      weight: 30,
+                      height: 120,
+                      club: "",
+                      photoDataUri: "",
+                    });
+                  }}>
+                    CRIAR OUTRA FIGURINHA
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
