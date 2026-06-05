@@ -49,6 +49,23 @@ export default function QuizPage() {
     }
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 8) value = value.slice(0, 8);
+    
+    let formattedValue = "";
+    if (value.length > 0) {
+      formattedValue = value.slice(0, 2);
+      if (value.length > 2) {
+        formattedValue += "/" + value.slice(2, 4);
+        if (value.length > 4) {
+          formattedValue += "/" + value.slice(4, 8);
+        }
+      }
+    }
+    setFormData({ ...formData, birthDate: formattedValue });
+  };
+
   const startGeneration = async () => {
     setLoading(true);
     setStep(4);
@@ -133,16 +150,18 @@ export default function QuizPage() {
                     <Label htmlFor="dob" className="text-primary font-bold">DATA DE NASCIMENTO</Label>
                     <Input
                       id="dob"
-                      type="date"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Ex: 20/05/2018"
                       className="h-12 border-2 focus:ring-primary rounded-xl"
                       value={formData.birthDate}
-                      onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                      onChange={handleDateChange}
                     />
                   </div>
                 </div>
                 <Button 
                   className="w-full h-14 text-lg font-bold bg-primary rounded-full pulse-button"
-                  disabled={!formData.childName || !formData.birthDate}
+                  disabled={!formData.childName || formData.birthDate.length < 10}
                   onClick={nextStep}
                 >
                   CONTINUAR <ChevronRight className="ml-2 w-5 h-5" />
