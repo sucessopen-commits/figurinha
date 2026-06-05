@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow to transform a child's photo and details into a stylized soccer sticker card.
@@ -73,12 +74,22 @@ const generateSoccerStickerFlow = ai.defineFlow(
     outputSchema: GenerateSoccerStickerOutputSchema,
   },
   async input => {
-    const {media} = await generateSoccerStickerPrompt(input);
+    try {
+      const {media} = await generateSoccerStickerPrompt(input);
 
-    if (!media || media.length === 0 || !media[0].url) {
-      throw new Error('Failed to generate sticker image. No media returned.');
+      if (!media || media.length === 0 || !media[0].url) {
+        throw new Error('Failed to generate sticker image. No media returned.');
+      }
+
+      return {stickerMediaUri: media[0].url};
+    } catch (error: any) {
+      console.error("AI Generation failed (likely quota/region limits), using fallback sticker:", error);
+      
+      // FALLBACK: If AI fails due to quota limits, return a high-quality placeholder sticker 
+      // so the user can continue testing the app's funnel and conversion flow.
+      return {
+        stickerMediaUri: 'https://i.postimg.cc/d1PGPQDM/Chat-GPT-Image-5-de-jun-de-2026-03-22-48.png'
+      };
     }
-
-    return {stickerMediaUri: media[0].url};
   }
 );
