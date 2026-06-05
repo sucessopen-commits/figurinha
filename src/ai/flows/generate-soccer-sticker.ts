@@ -53,14 +53,15 @@ const generateSoccerStickerPrompt = ai.definePrompt({
   config: {
     responseModalities: ['TEXT', 'IMAGE'], // Must provide both TEXT and IMAGE for image generation models
   },
-  prompt: `You are an expert soccer card designer. Your task is to transform the provided child's photo into a high-quality stylized soccer sticker card. Strictly maintain the child's likeness. Apply the following details onto the card in a visually appealing, sporty, and energetic design, fitting a "Figurinha Craque" theme. The background should be soccer-themed, maybe a stadium or a field, to enhance the visual. The card must look like a professional collectible soccer card.
+  prompt: `You are an expert soccer card designer. Your task is to transform the provided child's photo into a high-quality stylized soccer sticker card using a specific "Copa Brasil" theme. 
 
-Details to include prominently:
-Name: {{{childName}}}
-Birth Date: {{{birthDate}}}
-Club: {{{club}}}
-Weight: {{{weight}}} kg
-Height: {{{height}}} cm
+STRICTLY FOLLOW THIS VISUAL STYLE:
+- BACKGROUND: Use a vibrant Turquoise Blue background with large abstract Green shapes/waves.
+- ELEMENTS: Include a white "COPA" logo in the top right, a Brazil flag icon on the right side, and vertical outlined letters "BRA" on the right edge.
+- WATERMARK: Add a subtle repeating diagonal "PRÉVIA" watermark overlay across the entire image.
+- DATA BLOCKS: At the bottom, there must be two solid Blue horizontal blocks for text.
+- LIKENESS: Strictly maintain the child's facial features and likeness.
+- COMPOSITION: The child should be in a dynamic soccer pose, wearing a jersey.
 
 The output should be the completed soccer sticker card image.
 Child's Photo: {{media url=photoDataUri}}`,
@@ -88,7 +89,7 @@ const generateSoccerStickerFlow = ai.defineFlow(
       // FALLBACK: If AI fails due to quota limits, return a high-quality placeholder sticker 
       // so the user can continue testing the app's funnel and conversion flow.
       return {
-        stickerMediaUri: 'https://i.postimg.cc/d1PGPQDM/Chat-GPT-Image-5-de-jun-de-2026-03-22-48.png'
+        stickerMediaUri: 'https://i.postimg.cc/fyVYfyRx/Chat-GPT-Image-5-de-jun-de-2026-19-12-14.png'
       };
     }
   }

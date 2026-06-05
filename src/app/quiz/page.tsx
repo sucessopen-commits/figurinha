@@ -18,11 +18,7 @@ import {
   CheckCircle2, 
   ShieldCheck, 
   Image as ImageIcon,
-  X,
   Play,
-  Trophy,
-  Gift,
-  ArrowRight,
   Shirt
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -608,12 +604,47 @@ export default function QuizPage() {
                   <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
                 </div>
 
-                <div className="relative aspect-[3/4] max-w-[280px] mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-primary">
-                   {result && <Image src={result} alt="Figurinha Preview" fill className="object-cover" />}
-                   <div className="absolute inset-0 watermark-overlay opacity-60 pointer-events-none" />
+                {/* Sticker Preview Container */}
+                <div className="relative w-full max-w-[320px] mx-auto bg-white shadow-2xl overflow-hidden border border-gray-100">
+                  <div className="relative w-full h-0 pb-[135%]"> {/* Aspect ratio based on trade card 3:4 roughly */}
+                    <Image 
+                      src={result || 'https://i.postimg.cc/fyVYfyRx/Chat-GPT-Image-5-de-jun-de-2026-19-12-14.png'} 
+                      alt="Figurinha Preview" 
+                      fill 
+                      className="object-contain"
+                      priority
+                    />
+                    
+                    {/* Dynamic Text Overlays */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      {/* Name Block */}
+                      <div className="absolute bottom-[14.5%] left-0 right-0 px-4 text-center">
+                        <h3 className="font-headline text-white text-[clamp(18px,6vw,26px)] leading-tight uppercase drop-shadow-md truncate">
+                          {formData.childName || "CRAQUE"}
+                        </h3>
+                      </div>
+                      
+                      {/* Info Line Block */}
+                      <div className="absolute bottom-[9.5%] left-0 right-0 px-4 text-center">
+                        <p className="text-white font-bold text-[clamp(8px,2.5vw,11px)] uppercase tracking-tight drop-shadow-sm truncate">
+                          {formData.birthDate || "00/00/0000"} | {formData.height || "0"} cm | {formData.weight || "0"} kg
+                        </p>
+                      </div>
+                      
+                      {/* Club Block */}
+                      <div className="absolute bottom-[4.2%] left-0 right-0 px-4 text-center">
+                        <p className="text-white font-bold text-[clamp(10px,3.2vw,13px)] uppercase tracking-tighter drop-shadow-sm truncate">
+                          {formData.club || "TIME DO CORAÇÃO"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Watermark Protection */}
+                    <div className="absolute inset-0 watermark-overlay opacity-30 pointer-events-none" />
+                  </div>
                 </div>
 
-                <div className="space-y-4 pt-2">
+                <div className="space-y-4 pt-4">
                   <div className="flex flex-col items-center">
                     <span className="text-muted-foreground line-through text-sm">De R$ 69,90</span>
                     <div className="flex items-start gap-1">
