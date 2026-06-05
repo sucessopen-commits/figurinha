@@ -20,7 +20,7 @@ import {
   Image as ImageIcon,
   X
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type QuizData = {
   childName: string;
@@ -573,9 +573,11 @@ export default function QuizPage() {
       {/* MODAL DE AVISO */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl animate-in zoom-in-95 duration-300">
+          <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">AVISO</DialogTitle>
+          <DialogDescription className="sr-only">
+            Aviso sobre as diretrizes da foto para a figurinha.
+          </DialogDescription>
           <div className="space-y-6 text-center">
-            <h2 className="font-headline text-3xl text-primary uppercase">AVISO</h2>
-            
             <div className="bg-primary px-4 py-6 rounded-[24px] flex flex-col items-center">
               <div className="relative w-full aspect-[4/5] max-w-[240px] rounded-[16px] overflow-hidden shadow-xl border-4 border-white/10">
                 <Image 
