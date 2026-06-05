@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 
 const STICKER_IMAGES = [
   'https://i.postimg.cc/d1PGPQDM/Chat-GPT-Image-5-de-jun-de-2026-03-22-48.png', // Central
@@ -24,7 +24,7 @@ function StickerShowcase() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-[100%] md:max-w-[500px] mx-auto h-[320px] sm:h-[380px] md:h-[500px] flex items-center justify-center perspective-1000 mt-4 mb-4 overflow-visible">
+    <div className="relative w-full max-w-[360px] md:max-w-[500px] mx-auto h-[280px] sm:h-[330px] md:h-[500px] flex items-center justify-center perspective-1000 mt-6 md:mt-10 mb-4 overflow-visible">
       <div className="relative w-full h-full flex items-center justify-center">
         {STICKER_IMAGES.map((src, index) => {
           let position = (index - activeIndex + 3) % 3;
@@ -45,13 +45,13 @@ function StickerShowcase() {
             zIndex = 10;
             scale = 0.88;
             rotate = 8;
-            translateX = "28%"; // Reduzido para mobile safety
+            translateX = "28%";
             opacity = 0.7;
           } else { // Esquerda
             zIndex = 10;
             scale = 0.88;
             rotate = -8;
-            translateX = "-28%"; // Reduzido para mobile safety
+            translateX = "-28%";
             opacity = 0.7;
           }
 
@@ -88,8 +88,7 @@ export default function HomePage() {
     <main className="min-h-screen flex flex-col bg-background overflow-x-hidden selection:bg-primary selection:text-white">
       <section className="container mx-auto px-4 py-6 md:py-12 flex flex-col items-center text-center max-w-full">
         
-        {/* 1. SELO E HEADLINE ACIMA DAS FIGURINHAS */}
-        <div className="w-full max-w-4xl mx-auto space-y-3 md:space-y-6 mb-2">
+        <div className="w-full max-w-4xl mx-auto space-y-4 md:space-y-6 mb-2">
           <div className="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
             <Trophy className="w-3 h-3 md:w-4 h-4 text-primary" />
             <span className="text-primary font-bold text-[10px] md:text-xs tracking-widest uppercase">
@@ -103,29 +102,25 @@ export default function HomePage() {
           </h1>
         </div>
 
-        {/* 2. BLOCO DAS FIGURINHAS CENTRALIZADO */}
         <StickerShowcase />
 
-        {/* 3. TEXTO E CTA ABAIXO DAS FIGURINHAS */}
-        <div className="w-full max-w-2xl mx-auto space-y-4 md:space-y-8 mt-2">
+        <div className="w-full max-w-2xl mx-auto space-y-4 md:space-y-8 mt-6 md:mt-10">
           <p className="text-primary/90 text-base md:text-2xl font-medium leading-tight md:leading-relaxed px-2">
-            Crie uma figurinha profissional e colecionável em segundos usando Inteligência Artificial.
+            Responda algumas perguntas rápidas e crie uma figurinha exclusiva, com o nome, foto e estilo do seu pequeno craque.
           </p>
 
           <Link href="/quiz" className="block w-full">
             <Button 
               size="lg" 
-              className="w-full md:w-auto h-16 md:h-20 px-8 md:px-12 text-lg md:text-2xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-xl md:shadow-2xl shadow-primary/40 pulse-button group"
+              className="w-full md:w-auto h-16 md:h-20 px-8 md:px-12 text-lg md:text-2xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-xl md:shadow-2xl shadow-primary/40 pulse-button"
             >
-              CRIAR MINHA FIGURINHA
-              <ChevronRight className="ml-2 md:ml-3 w-6 h-6 md:w-8 h-8 group-hover:translate-x-1 transition-transform" />
+              CRIAR AGORA
             </Button>
           </Link>
         </div>
 
       </section>
 
-      {/* Estilos específicos para garantir o visual limpo */}
       <style jsx global>{`
         body {
           overflow-x: hidden;
