@@ -10,7 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { generateSoccerSticker } from "@/ai/flows/generate-soccer-sticker";
-import { Camera, Upload, ChevronRight, ChevronLeft, Loader2, Trophy, DollarSign, CheckCircle2, AlertTriangle, ShieldCheck, Image as ImageIcon } from "lucide-react";
+import { 
+  Camera, 
+  ChevronRight, 
+  Loader2, 
+  DollarSign, 
+  CheckCircle2, 
+  ShieldCheck, 
+  Image as ImageIcon,
+  X
+} from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 type QuizData = {
   childName: string;
@@ -35,6 +45,9 @@ export default function QuizPage() {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [photoLoadingProgress, setPhotoLoadingProgress] = useState(0);
   const [result, setResult] = useState<string | null>(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [pendingUploadType, setPendingUploadType] = useState<'gallery' | 'camera' | null>(null);
+  
   const [formData, setFormData] = useState<QuizData>({
     childName: "",
     birthDate: "",
@@ -92,6 +105,19 @@ export default function QuizPage() {
         setFormData({ ...formData, photoDataUri: reader.result as string });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleOpenWarning = (type: 'gallery' | 'camera') => {
+    setPendingUploadType(type);
+    setShowWarning(true);
+  };
+
+  const confirmWarning = () => {
+    setShowWarning(false);
+    if (pendingUploadType) {
+      triggerUpload(pendingUploadType);
+      setPendingUploadType(null);
     }
   };
 
@@ -321,7 +347,7 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 4: SOMENTE ENVIO DA FOTO */}
+            {/* STEP 4: SOLICITAÇÃO DA FOTO */}
             {step === 4 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
@@ -337,7 +363,7 @@ export default function QuizPage() {
                     {/* Opção 1: Arquivo */}
                     <div 
                       className="group cursor-pointer border-2 border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5 rounded-2xl p-6 transition-all text-center space-y-2"
-                      onClick={() => triggerUpload('gallery')}
+                      onClick={() => handleOpenWarning('gallery')}
                     >
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
                         <ImageIcon className="w-6 h-6 text-primary" />
@@ -351,7 +377,7 @@ export default function QuizPage() {
                     {/* Opção 2: Câmera */}
                     <div 
                       className="group cursor-pointer border-2 border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5 rounded-2xl p-6 transition-all text-center space-y-2"
-                      onClick={() => triggerUpload('camera')}
+                      onClick={() => handleOpenWarning('camera')}
                     >
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
                         <Camera className="w-6 h-6 text-primary" />
@@ -543,6 +569,38 @@ export default function QuizPage() {
           </p>
         </div>
       </div>
+
+      {/* MODAL DE AVISO */}
+      <Dialog open={showWarning} onOpenChange={setShowWarning}>
+        <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="space-y-6 text-center">
+            <h2 className="font-headline text-3xl text-primary uppercase">AVISO</h2>
+            
+            <div className="bg-primary px-4 py-6 rounded-[24px] flex flex-col items-center">
+              <div className="relative w-full aspect-[4/5] max-w-[240px] rounded-[16px] overflow-hidden shadow-xl border-4 border-white/10">
+                <Image 
+                  src="https://i.postimg.cc/4NQDR03g/Chat-GPT-Image-5-de-jun-de-2026-18-07-41.png" 
+                  alt="Exemplo de foto correta" 
+                  fill 
+                  className="object-cover"
+                  sizes="(max-width: 768px) 240px, 240px"
+                />
+              </div>
+            </div>
+
+            <p className="text-primary font-bold text-lg leading-tight px-2">
+              A foto precisa ser somente da pessoa, sem outras pessoas no enquadramento.
+            </p>
+
+            <Button 
+              className="w-full h-14 text-xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-lg"
+              onClick={confirmWarning}
+            >
+              ENTENDI
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
