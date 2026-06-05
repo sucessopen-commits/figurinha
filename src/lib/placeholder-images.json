@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "helena-sticker",
+      "description": "Helena Soccer Sticker",
+      "imageUrl": "https://picsum.photos/seed/helena/400/500",
+      "imageHint": "soccer child"
+    },
+    {
+      "id": "miguel-sticker",
+      "description": "Miguel Soccer Sticker",
+      "imageUrl": "https://picsum.photos/seed/miguel/400/500",
+      "imageHint": "soccer boy"
+    },
+    {
+      "id": "arthur-sticker",
+      "description": "Arthur Soccer Sticker",
+      "imageUrl": "https://picsum.photos/seed/arthur/400/500",
+      "imageHint": "football kid"
+    }
+  ]
 }
