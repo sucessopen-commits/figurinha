@@ -20,7 +20,8 @@ import {
   Play,
   Shirt,
   ShoppingCart,
-  Plus
+  Plus,
+  CalendarDays
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -704,6 +705,13 @@ export default function QuizPage() {
                     </div>
                   </div>
 
+                  <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-center justify-center gap-3">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                    <p className="text-primary font-bold text-xs uppercase tracking-tight">
+                      Sorteio em 11/06/2026 às 15:00 horas
+                    </p>
+                  </div>
+
                   <p className="text-[11px] text-primary/60 font-bold uppercase tracking-tight">
                     Após garantir sua figurinha, você participa automaticamente do sorteio.
                   </p>
@@ -720,14 +728,11 @@ export default function QuizPage() {
                   </div>
 
                   <Button 
-                    className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/30 pulse-button flex flex-col items-center justify-center leading-none px-4"
+                    className="w-full h-16 md:h-20 text-xl md:text-2xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/30 pulse-button flex items-center justify-center leading-none px-4"
                     onClick={() => setStep(8)}
                     disabled={!result}
                   >
-                    <span>QUERO PARTICIPAR E RECEBER MINHA FIGURINHA</span>
-                    <span className="text-[10px] font-medium opacity-80 mt-2 uppercase tracking-widest">
-                      {result ? "Clique para finalizar" : "Preparando sua figurinha..."}
-                    </span>
+                    <span>RECEBER FIGURINHA</span>
                   </Button>
                 </div>
 
