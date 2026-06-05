@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { generateSoccerSticker } from "@/ai/flows/generate-soccer-sticker";
-import { Camera, Upload, ChevronRight, ChevronLeft, Loader2, Trophy, DollarSign, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Camera, Upload, ChevronRight, ChevronLeft, Loader2, Trophy, DollarSign, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
 
 type QuizData = {
   childName: string;
@@ -22,7 +22,11 @@ type QuizData = {
   photoDataUri: string;
 };
 
-type Step = 1 | 1.5 | 1.6 | 2 | 3 | 4 | 5; // 5 is processing/result
+// 1-4: Official Steps
+// 5: Loading Photo (5s)
+// 6: Final Confirmation
+// 7: Generating Result
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export default function QuizPage() {
   const router = useRouter();
@@ -41,9 +45,23 @@ export default function QuizPage() {
     photoDataUri: "",
   });
 
-  // Handle auto-transition for Step 1.5 (Loading Photo)
+  const calculateAge = (dateString: string) => {
+    if (!dateString || dateString.length < 10) return 0;
+    const [day, month, year] = dateString.split('/').map(Number);
+    const birthDate = new Date(year, month - 1, day);
+    if (isNaN(birthDate.getTime())) return 0;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Handle auto-transition for Step 5 (Loading Photo)
   useEffect(() => {
-    if (step === 1.5) {
+    if (step === 5) {
       setPhotoLoadingProgress(0);
       const duration = 5000;
       const interval = 50;
@@ -53,7 +71,7 @@ export default function QuizPage() {
         setPhotoLoadingProgress((prev) => {
           if (prev >= 100) {
             clearInterval(timer);
-            setStep(1.6);
+            setStep(6);
             return 100;
           }
           return prev + increment;
@@ -94,7 +112,7 @@ export default function QuizPage() {
 
   const startGeneration = async () => {
     setLoading(true);
-    setStep(5);
+    setStep(7);
     
     const interval = setInterval(() => {
       setLoadingProgress((prev) => {
@@ -124,12 +142,8 @@ export default function QuizPage() {
     }
   };
 
-  // Official steps for the progress bar (1 to 4)
   const getOfficialStep = () => {
-    if (step === 1 || step === 1.5 || step === 1.6) return 1;
-    if (step === 2) return 2;
-    if (step === 3) return 3;
-    if (step === 4) return 4;
+    if (step >= 1 && step <= 4) return step;
     return 4;
   };
 
@@ -137,10 +151,11 @@ export default function QuizPage() {
   const progressPercent = (officialStep / 4) * 100;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white">
       <div className="w-full max-w-lg space-y-6">
-        {/* Progress Bar Area - Hidden in Loading Steps */}
-        {step !== 1.5 && step !== 5 && (
+        
+        {/* Progress Bar - Hidden in loading/result states */}
+        {step < 5 && step !== 7 && (
           <div className="space-y-4">
             <div className="flex justify-between items-center px-1">
               <span className="text-primary font-bold text-sm tracking-widest uppercase">
@@ -162,13 +177,15 @@ export default function QuizPage() {
         )}
 
         <Card className="border-none shadow-2xl rounded-[24px] md:rounded-[32px] overflow-hidden bg-white">
-          <CardContent className="p-8">
+          <CardContent className="p-6 md:p-8">
+            
+            {/* STEP 1: NOME */}
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
                   <span className="text-4xl">✍️</span>
-                  <h2 className="font-headline text-3xl text-primary">QUEM É O CRAQUE?</h2>
-                  <p className="text-muted-foreground">Conte-nos o nome e envie uma foto clara.</p>
+                  <h2 className="font-headline text-3xl text-primary uppercase">QUEM É O CRAQUE?</h2>
+                  <p className="text-muted-foreground">Conte-nos o nome que vai aparecer na figurinha.</p>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -181,126 +198,23 @@ export default function QuizPage() {
                       onChange={(e) => setFormData({ ...formData, childName: e.target.value })}
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-primary font-bold">FOTO DO CRAQUE</Label>
-                    <div 
-                      className="relative h-48 w-full border-2 border-dashed border-primary/30 rounded-2xl flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group"
-                      onClick={() => document.getElementById("photo-upload")?.click()}
-                    >
-                      {formData.photoDataUri ? (
-                        <div className="relative w-full h-full p-2">
-                           <div className="relative w-full h-full rounded-xl overflow-hidden">
-                             <Image src={formData.photoDataUri} alt="Preview" fill className="object-cover" />
-                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-white font-bold flex items-center"><Camera className="mr-2" /> TROCAR</span>
-                             </div>
-                           </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                            <Upload className="w-8 h-8 text-primary" />
-                          </div>
-                          <span className="text-primary font-bold">SUBIR FOTO</span>
-                          <span className="text-xs text-muted-foreground mt-1">Formatos: JPG, PNG</span>
-                        </>
-                      )}
-                      <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    </div>
-                    <p className="text-[10px] text-center text-muted-foreground mt-2">
-                      💡 Dica: Use uma foto de rosto com boa iluminação.
-                    </p>
-                  </div>
                 </div>
                 <Button 
-                  className="w-full h-14 text-lg font-bold bg-primary rounded-full pulse-button"
-                  disabled={!formData.childName || !formData.photoDataUri}
-                  onClick={() => setStep(1.5)}
+                  className="w-full h-14 text-lg font-bold bg-primary rounded-full"
+                  disabled={!formData.childName}
+                  onClick={() => setStep(2)}
                 >
                   PRÓXIMO <ChevronRight className="ml-2 w-5 h-5" />
                 </Button>
               </div>
             )}
 
-            {step === 1.5 && (
-              <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
-                <h2 className="font-headline text-3xl text-primary uppercase">CARREGANDO FOTO</h2>
-                
-                <div className="relative w-[140px] h-[140px] mx-auto rounded-[18px] overflow-hidden bg-primary/5 border-2 border-primary/10">
-                   {formData.photoDataUri ? (
-                     <Image src={formData.photoDataUri} alt="Loading" fill className="object-cover opacity-50 grayscale" />
-                   ) : (
-                     <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-primary/20 w-10 h-10" /></div>
-                   )}
-                </div>
-
-                <p className="text-primary font-bold text-lg">“Esse tem cara de jogador caro hein”</p>
-
-                <div className="space-y-2">
-                   <div className="flex justify-between items-end text-primary font-bold text-xs uppercase">
-                      <span>Carregando...</span>
-                      <span>{Math.round(photoLoadingProgress)}%</span>
-                   </div>
-                   <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-300" 
-                        style={{ width: `${photoLoadingProgress}%` }}
-                      />
-                   </div>
-                </div>
-              </div>
-            )}
-
-            {step === 1.6 && (
-              <div className="space-y-6 animate-in zoom-in-95 duration-300">
-                <div className="text-center space-y-2">
-                  <span className="text-4xl">✅</span>
-                  <h2 className="font-headline text-3xl text-primary">CONFIRA A FOTO</h2>
-                  <p className="text-muted-foreground">Antes de continuar, veja se está tudo certo.</p>
-                </div>
-
-                <div className="relative w-[120px] h-[120px] mx-auto rounded-full overflow-hidden border-4 border-primary shadow-lg">
-                   <Image src={formData.photoDataUri} alt="Confirm" fill className="object-cover" />
-                </div>
-                
-                <p className="text-center text-primary font-bold text-xs uppercase tracking-tighter">
-                  VERIFIQUE SE O ROSTO ESTÁ BEM VISÍVEL
-                </p>
-
-                <div className="bg-muted/50 p-4 rounded-2xl space-y-3">
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground font-bold">NOME</span>
-                      <span className="text-primary font-bold">{formData.childName}</span>
-                   </div>
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground font-bold">FOTO</span>
-                      <span className="text-accent font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> Enviada com sucesso
-                      </span>
-                   </div>
-                </div>
-
-                <div className="text-center">
-                   <p className="text-primary font-bold">Está tudo certo para continuar?</p>
-                </div>
-
-                <div className="space-y-3">
-                  <Button className="w-full h-14 text-lg font-bold bg-primary rounded-full shadow-lg" onClick={() => setStep(2)}>
-                    SIM, CONTINUAR <ChevronRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => setStep(1)}>
-                    ALTERAR FOTO OU NOME
-                  </Button>
-                </div>
-              </div>
-            )}
-
+            {/* STEP 2: NASCIMENTO E EMAIL */}
             {step === 2 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
                   <span className="text-4xl">📅</span>
-                  <h2 className="font-headline text-3xl text-primary">CONTATO E IDADE</h2>
+                  <h2 className="font-headline text-3xl text-primary uppercase">CONTATO E IDADE</h2>
                   <p className="text-muted-foreground">Onde enviaremos a sua figurinha.</p>
                 </div>
                 <div className="space-y-4">
@@ -329,7 +243,7 @@ export default function QuizPage() {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <Button variant="outline" className="h-14 w-1/3 rounded-full border-primary text-primary" onClick={() => setStep(1.6)}>
+                  <Button variant="outline" className="h-14 w-1/3 rounded-full border-primary text-primary" onClick={() => setStep(1)}>
                     VOLTAR
                   </Button>
                   <Button 
@@ -343,11 +257,12 @@ export default function QuizPage() {
               </div>
             )}
 
+            {/* STEP 3: CLUBE E DADOS */}
             {step === 3 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
                   <span className="text-4xl">⚽</span>
-                  <h2 className="font-headline text-3xl text-primary">DADOS DO CRAQUE</h2>
+                  <h2 className="font-headline text-3xl text-primary uppercase">DADOS DO CRAQUE</h2>
                   <p className="text-muted-foreground">Time, peso e altura para o card.</p>
                 </div>
                 <div className="space-y-4">
@@ -368,7 +283,7 @@ export default function QuizPage() {
                         type="number"
                         className="h-12 border-2 rounded-xl"
                         value={formData.weight}
-                        onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) })}
+                        onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 0 })}
                       />
                     </div>
                     <div className="space-y-2">
@@ -377,7 +292,7 @@ export default function QuizPage() {
                         type="number"
                         className="h-12 border-2 rounded-xl"
                         value={formData.height}
-                        onChange={(e) => setFormData({ ...formData, height: parseInt(e.target.value) })}
+                        onChange={(e) => setFormData({ ...formData, height: parseInt(e.target.value) || 0 })}
                       />
                     </div>
                   </div>
@@ -393,49 +308,179 @@ export default function QuizPage() {
               </div>
             )}
 
+            {/* STEP 4: FOTO + CONFERÊNCIA */}
             {step === 4 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
                   <span className="text-4xl">📋</span>
-                  <h2 className="font-headline text-3xl text-primary">CONFERÊNCIA FINAL</h2>
-                  <p className="text-muted-foreground">Verifique se todos os dados estão corretos.</p>
+                  <h2 className="font-headline text-3xl text-primary uppercase">CONFIRA SEUS DADOS</h2>
+                  <p className="text-muted-foreground text-sm">A figurinha será gerada em breve. Revise os dados abaixo com atenção.</p>
+                  <p className="text-accent font-bold text-xs bg-accent/10 py-1 rounded-full px-4 inline-block">
+                    Não fazemos alterações após a aprovação e pagamento.
+                  </p>
                 </div>
                 
-                <div className="bg-muted/30 rounded-2xl p-6 space-y-4 border-2 border-primary/5">
-                   <div className="flex items-center gap-4">
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-primary">
-                         <Image src={formData.photoDataUri} alt="Final Review" fill className="object-cover" />
-                      </div>
-                      <div>
-                         <p className="text-primary font-bold text-lg leading-none">{formData.childName}</p>
-                         <p className="text-muted-foreground text-xs mt-1">Nascimento: {formData.birthDate}</p>
-                      </div>
-                   </div>
-                   
-                   <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="bg-white p-3 rounded-xl border">
-                         <p className="text-muted-foreground font-bold">TIME</p>
-                         <p className="text-primary font-bold truncate">{formData.club}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border">
-                         <p className="text-muted-foreground font-bold">PESO/ALT</p>
-                         <p className="text-primary font-bold">{formData.weight}kg / {formData.height}cm</p>
-                      </div>
-                   </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-primary font-bold">FOTO DO CRAQUE</Label>
+                    <div 
+                      className="relative h-32 w-full border-2 border-dashed border-primary/30 rounded-2xl flex flex-col items-center justify-center bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group"
+                      onClick={() => document.getElementById("photo-upload")?.click()}
+                    >
+                      {formData.photoDataUri ? (
+                        <div className="relative w-full h-full p-2">
+                           <div className="relative w-full h-full rounded-xl overflow-hidden">
+                             <Image src={formData.photoDataUri} alt="Preview" fill className="object-cover" />
+                             <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-white font-bold flex items-center"><Camera className="mr-2" /> TROCAR FOTO</span>
+                                <span className="text-white/80 text-[10px]">VERIFIQUE SE O ROSTO ESTÁ BEM VISÍVEL</span>
+                             </div>
+                           </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-1">
+                            <Upload className="w-5 h-5 text-primary" />
+                          </div>
+                          <span className="text-primary font-bold text-sm">Enviar foto DO ROSTO, não de corpo</span>
+                          <span className="text-[10px] text-muted-foreground">Formatos: JPG, PNG</span>
+                        </>
+                      )}
+                      <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/30 rounded-2xl p-4 space-y-3 border border-primary/5 text-sm">
+                    <div className="flex justify-between border-b pb-2">
+                      <span className="text-muted-foreground">NOME</span>
+                      <span className="text-primary font-bold">{formData.childName}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span className="text-muted-foreground">NASCIMENTO / IDADE</span>
+                      <span className="text-primary font-bold">{formData.birthDate} ({calculateAge(formData.birthDate)} anos)</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span className="text-muted-foreground">E-MAIL</span>
+                      <span className="text-primary font-bold">{formData.email}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span className="text-muted-foreground">PESO / ALTURA</span>
+                      <span className="text-primary font-bold">{formData.weight}kg / {formData.height}cm</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">CLUBE</span>
+                      <span className="text-primary font-bold">{formData.club}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
                   <Button variant="outline" className="h-14 w-1/3 rounded-full border-primary text-primary" onClick={() => setStep(3)}>
-                    EDITAR
+                    CORRIGIR
                   </Button>
-                  <Button className="h-14 flex-1 text-lg font-bold bg-primary rounded-full shadow-lg" onClick={startGeneration}>
-                    GERAR FIGURINHA <Trophy className="ml-2 w-5 h-5" />
+                  <Button 
+                    className="h-14 flex-1 text-lg font-bold bg-primary rounded-full shadow-lg" 
+                    onClick={() => {
+                      if (!formData.photoDataUri) {
+                        alert("Envie uma foto do rosto para continuar.");
+                      } else {
+                        setStep(5);
+                      }
+                    }}
+                  >
+                    ENTENDI, GERAR FIGURINHA ⚽
                   </Button>
                 </div>
               </div>
             )}
 
+            {/* STEP 5: CARREGANDO FOTO (INTERMEDIÁRIA) */}
             {step === 5 && (
+              <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
+                <h2 className="font-headline text-3xl text-primary uppercase">CARREGANDO FOTO</h2>
+                
+                <div className="relative w-[140px] h-[140px] mx-auto rounded-[18px] overflow-hidden bg-primary/5 border-2 border-primary/10">
+                   {formData.photoDataUri ? (
+                     <Image src={formData.photoDataUri} alt="Loading" fill className="object-cover opacity-50 grayscale" />
+                   ) : (
+                     <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-primary/20 w-10 h-10" /></div>
+                   )}
+                </div>
+
+                <p className="text-primary font-bold text-lg italic">“Esse tem cara de jogador caro hein”</p>
+
+                <div className="space-y-2">
+                   <div className="flex justify-between items-end text-primary font-bold text-xs uppercase">
+                      <span>Carregando...</span>
+                      <span>{Math.round(photoLoadingProgress)}%</span>
+                   </div>
+                   <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all duration-300" 
+                        style={{ width: `${photoLoadingProgress}%` }}
+                      />
+                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 6: CONFIRMAÇÃO FINAL (INTERMEDIÁRIA) */}
+            {step === 6 && (
+              <div className="space-y-6 animate-in zoom-in-95 duration-300">
+                <div className="text-center space-y-2">
+                  <span className="text-4xl">✅</span>
+                  <h2 className="font-headline text-3xl text-primary uppercase">CONFIRA A FOTO E OS DADOS</h2>
+                  <p className="text-muted-foreground">Veja se está tudo certo antes de gerar sua figurinha.</p>
+                </div>
+
+                <div className="relative w-[120px] h-[120px] mx-auto rounded-full overflow-hidden border-4 border-primary shadow-lg">
+                   <Image src={formData.photoDataUri} alt="Confirm" fill className="object-cover" />
+                </div>
+                
+                <p className="text-center text-primary font-bold text-xs uppercase tracking-tighter">
+                  VERIFIQUE SE O ROSTO ESTÁ PRÓXIMO E BEM VISÍVEL
+                </p>
+
+                <div className="bg-muted/50 p-4 rounded-2xl space-y-2 text-xs">
+                   <div className="flex justify-between">
+                      <span className="text-muted-foreground font-bold">NOME</span>
+                      <span className="text-primary font-bold">{formData.childName}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-muted-foreground font-bold">NASCIMENTO / IDADE</span>
+                      <span className="text-primary font-bold">{formData.birthDate} ({calculateAge(formData.birthDate)} anos)</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-muted-foreground font-bold">E-MAIL</span>
+                      <span className="text-primary font-bold">{formData.email}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-muted-foreground font-bold">TIME</span>
+                      <span className="text-primary font-bold">{formData.club}</span>
+                   </div>
+                   <div className="flex justify-between">
+                      <span className="text-muted-foreground font-bold">PESO / ALT</span>
+                      <span className="text-primary font-bold">{formData.weight}kg / {formData.height}cm</span>
+                   </div>
+                </div>
+
+                <div className="text-center">
+                   <p className="text-primary font-bold">Está tudo certo para continuar?</p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button className="w-full h-14 text-lg font-bold bg-primary rounded-full shadow-lg pulse-button" onClick={startGeneration}>
+                    SIM, GERAR FIGURINHA ⚽
+                  </Button>
+                  <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => setStep(4)}>
+                    ALTERAR ALGUMA COISA
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 7: GERANDO FIGURINHA / RESULTADO */}
+            {step === 7 && (
               <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
                 {!result ? (
                   <div className="space-y-8">
@@ -448,21 +493,21 @@ export default function QuizPage() {
                     </div>
                     
                     <div className="space-y-3">
-                      <h2 className="font-headline text-3xl text-primary uppercase">NOSSOS ROBÔS ESTÃO TRABALHANDO!</h2>
+                      <h2 className="font-headline text-3xl text-primary uppercase leading-none">NOSSOS ROBÔS ESTÃO TRABALHANDO!</h2>
                       <div className="bg-accent/10 p-4 rounded-xl border border-accent/20">
-                         <p className="text-accent font-bold flex items-center justify-center">
+                         <p className="text-accent font-bold flex items-center justify-center text-sm md:text-base">
                            <DollarSign className="mr-1 w-5 h-5" /> VOCÊ ESTÁ CONCORRENDO A UM PRÊMIO DE <span className="ml-1 text-2xl">MIL REAIS</span>
                          </p>
                          <p className="text-xs text-accent/80 mt-1">Após a geração, você receberá seu número da sorte.</p>
                       </div>
-                      <p className="text-muted-foreground italic">"Estilizando uniforme... Ajustando cores... Aplicando efeitos de craque..."</p>
+                      <p className="text-muted-foreground italic text-sm">"Estilizando uniforme... Ajustando cores... Aplicando efeitos de craque..."</p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6 animate-in zoom-in-95 duration-500">
                     <div className="text-center space-y-2">
                       <span className="text-4xl">✅</span>
-                      <h2 className="font-headline text-3xl text-primary">FIGURINHA GERADA!</h2>
+                      <h2 className="font-headline text-3xl text-primary uppercase">FIGURINHA GERADA!</h2>
                       <p className="text-muted-foreground">Veja como ficou o seu pequeno craque.</p>
                     </div>
 
@@ -498,31 +543,11 @@ export default function QuizPage() {
 
         {/* Support Info */}
         <div className="text-center">
-          <p className="text-primary font-bold text-xs flex items-center justify-center gap-1 opacity-60">
+          <p className="text-primary font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 opacity-60 uppercase tracking-widest">
             <ShieldCheck className="w-4 h-4" /> SEUS DADOS ESTÃO PROTEGIDOS
           </p>
         </div>
       </div>
     </div>
-  );
-}
-
-function ShieldCheck(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }
