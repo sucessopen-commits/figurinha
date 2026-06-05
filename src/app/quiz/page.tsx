@@ -20,10 +20,10 @@ import {
   Play,
   Shirt,
   ShoppingCart,
-  Trash2,
   Plus
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 type StickerData = {
   childName: string;
@@ -40,24 +40,34 @@ type QuizData = StickerData & {
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
-// Constantes de Precificação
+// Constantes de Precificação Atualizadas
 const BASE_PRICE_PER_UNIT = 12.90;
 
 const getPricingInfo = (qty: number) => {
-  let discountRate = 0;
-  if (qty === 2) discountRate = 0.20;
-  if (qty === 3) discountRate = 0.40;
-  if (qty === 4) discountRate = 0.60;
+  let total = BASE_PRICE_PER_UNIT;
+  let savings = 0;
+
+  if (qty === 1) {
+    total = 12.90;
+    savings = 0;
+  } else if (qty === 2) {
+    total = 20.64;
+    savings = 5.16;
+  } else if (qty === 3) {
+    total = 23.22;
+    savings = 15.48;
+  } else if (qty === 4) {
+    total = 25.53;
+    savings = 26.07;
+  }
 
   const fullPrice = qty * BASE_PRICE_PER_UNIT;
-  const savings = fullPrice * discountRate;
-  const total = fullPrice - savings;
 
   return {
     total,
     savings,
     fullPrice,
-    discountPercent: Math.round(discountRate * 100)
+    discountPercent: Math.round((savings / fullPrice) * 100)
   };
 };
 
@@ -77,6 +87,11 @@ export default function QuizPage() {
   const [totalQuantity, setTotalQuantity] = useState(1);
   const [extraStickers, setExtraStickers] = useState<StickerData[]>([]);
   const [currentExtraIdx, setCurrentExtraIdx] = useState(0);
+  
+  // Animation State
+  const [isFlying, setIsFlying] = useState(false);
+  const [flyImage, setFlyImage] = useState<string | null>(null);
+  const [showFlySuccess, setShowFlySuccess] = useState(false);
 
   const [formData, setFormData] = useState<QuizData>({
     childName: "",
@@ -264,22 +279,33 @@ export default function QuizPage() {
   };
 
   const handleNextExtra = () => {
-    const updatedExtras = [...extraStickers, currentExtraData];
-    setExtraStickers(updatedExtras);
-    
-    if (updatedExtras.length < totalQuantity - 1) {
-      setCurrentExtraIdx(updatedExtras.length);
-      setCurrentExtraData({
-        childName: "",
-        birthDate: "",
-        weight: 30,
-        height: 120,
-        club: "",
-        photoDataUri: "",
-      });
-    } else {
-      setStep(10);
-    }
+    // Start Animation
+    setFlyImage(currentExtraData.photoDataUri);
+    setIsFlying(true);
+    setShowFlySuccess(true);
+
+    setTimeout(() => {
+      setIsFlying(false);
+      setFlyImage(null);
+      
+      const updatedExtras = [...extraStickers, currentExtraData];
+      setExtraStickers(updatedExtras);
+      
+      if (updatedExtras.length < totalQuantity - 1) {
+        setCurrentExtraIdx(updatedExtras.length);
+        setCurrentExtraData({
+          childName: "",
+          birthDate: "",
+          weight: 30,
+          height: 120,
+          club: "",
+          photoDataUri: "",
+        });
+        setTimeout(() => setShowFlySuccess(false), 2000);
+      } else {
+        setStep(10);
+      }
+    }, 800);
   };
 
   const pricing = getPricingInfo(totalQuantity);
@@ -288,8 +314,18 @@ export default function QuizPage() {
   const progressPercent = (officialStep / 4) * 100;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white">
-      <div className="w-full max-w-lg space-y-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-hidden">
+      
+      {/* Fly to Cart Animation Element */}
+      {isFlying && flyImage && (
+        <div className="fixed z-[999] pointer-events-none animate-fly-to-cart" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+          <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-2xl">
+            <Image src={flyImage} alt="Fly" fill className="object-cover" />
+          </div>
+        </div>
+      )}
+
+      <div className="w-full max-w-lg space-y-6 z-10">
         
         {step < 5 && (
           <div className="space-y-4">
@@ -309,6 +345,26 @@ export default function QuizPage() {
               </div>
             </div>
             <Progress value={progressPercent} className="h-3 bg-primary/10" />
+          </div>
+        )}
+
+        {/* Global Cart Indicator for Steps 8, 9, 10 */}
+        {(step >= 8) && (
+          <div className="flex justify-center mb-2 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className={cn(
+              "flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border-2 border-primary/20 transition-all",
+              showFlySuccess && "scale-110 border-accent bg-accent/5"
+            )}>
+              <div className="relative">
+                <ShoppingCart className={cn("w-5 h-5 text-primary", showFlySuccess && "text-accent animate-bounce")} />
+                <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {step === 9 ? extraStickers.length + 1 : (step === 10 ? totalQuantity : 1)}
+                </span>
+              </div>
+              <span className="text-primary font-headline text-sm uppercase tracking-tight">
+                {step === 9 ? `FIGURINHA ${extraStickers.length + 1} de ${totalQuantity}` : `${totalQuantity} FIGURINHAS`}
+              </span>
+            </div>
           </div>
         )}
 
@@ -686,26 +742,20 @@ export default function QuizPage() {
             {step === 8 && (
               <div className="space-y-6 animate-in zoom-in-95 duration-500 text-center">
                 <div className="text-center space-y-1">
-                  <div className="flex justify-center mb-2">
-                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                      <ShoppingCart className="w-3 h-3" /> {totalQuantity} {totalQuantity === 1 ? 'Figurinha' : 'Figurinhas'} no carrinho
-                    </span>
-                  </div>
                   <span className="text-5xl">⚽</span>
                   <h2 className="font-headline text-5xl text-primary uppercase leading-none mt-2">GOOLL!</h2>
                   <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
                 </div>
 
-                <div className="relative w-full max-w-[320px] mx-auto">
-                  <div className="relative w-full aspect-[3/4]">
-                    <Image 
-                      src="https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png" 
-                      alt="Figurinha Preview" 
-                      fill 
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
+                <div className="relative w-full max-w-[320px] mx-auto overflow-hidden">
+                  <Image 
+                    src="https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png" 
+                    alt="Figurinha Preview" 
+                    width={320}
+                    height={427}
+                    className="w-full h-auto object-contain block mx-auto"
+                    priority
+                  />
                 </div>
 
                 <div className="space-y-4 pt-4">
@@ -716,7 +766,7 @@ export default function QuizPage() {
                     </div>
                     {pricing.savings > 0 && (
                       <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
-                        VOCÊ ECONOMIZA R$ {pricing.savings.toFixed(2).replace('.', ',')} ({pricing.discountPercent}% OFF)
+                        VOCÊ ECONOMIZA R$ {pricing.savings.toFixed(2).replace('.', ',')}
                       </p>
                     )}
                   </div>
@@ -740,9 +790,6 @@ export default function QuizPage() {
             {step === 9 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
-                  <div className="flex justify-center mb-1">
-                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase">FIGURINHA EXTRA {currentExtraIdx + 2} de {totalQuantity}</span>
-                  </div>
                   <h2 className="font-headline text-3xl text-primary uppercase leading-tight">DADOS DO CRAQUE EXTRA</h2>
                   <p className="text-muted-foreground text-sm">Preencha apenas as informações das novas figurinhas.</p>
                 </div>
@@ -809,19 +856,26 @@ export default function QuizPage() {
                       </Button>
                     </div>
                     {currentExtraData.photoDataUri && (
-                      <div className="relative w-20 h-20 mx-auto rounded-xl overflow-hidden border-2 border-primary/20">
+                      <div className="relative w-20 h-20 mx-auto rounded-xl overflow-hidden border-2 border-primary/20 mt-4 shadow-lg">
                          <Image src={currentExtraData.photoDataUri} alt="Extra Preview" fill className="object-cover" />
                       </div>
                     )}
                   </div>
                 </div>
 
+                {showFlySuccess && (
+                  <div className="bg-accent/10 border-2 border-accent/20 p-3 rounded-xl flex items-center justify-center gap-2 animate-in zoom-in duration-300">
+                    <CheckCircle2 className="w-4 h-4 text-accent" />
+                    <span className="text-accent font-bold text-xs uppercase">Figurinha adicionada ao carrinho!</span>
+                  </div>
+                )}
+
                 <Button 
-                  className="w-full h-14 text-lg font-bold bg-primary rounded-full shadow-lg"
-                  disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10}
+                  className="w-full h-16 text-lg font-bold bg-primary rounded-full shadow-lg"
+                  disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
                   onClick={handleNextExtra}
                 >
-                  {currentExtraIdx < totalQuantity - 2 ? 'PRÓXIMA FIGURINHA' : 'REVISAR PEDIDO'} <ChevronRight className="ml-2 w-5 h-5" />
+                  <Plus className="mr-2 w-5 h-5" /> ADICIONAR AO CARRINHO
                 </Button>
               </div>
             )}
@@ -863,16 +917,12 @@ export default function QuizPage() {
 
                 <div className="bg-primary/5 p-4 rounded-2xl space-y-2 border-2 border-primary/10">
                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total de figurinhas:</span>
-                      <span className="text-primary font-bold">{totalQuantity}</span>
-                   </div>
-                   <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span className="text-muted-foreground">Subtotal ({totalQuantity}x):</span>
                       <span className="text-muted-foreground line-through">R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
                    </div>
                    {pricing.savings > 0 && (
                      <div className="flex justify-between text-sm">
-                        <span className="text-accent font-bold">Desconto acumulado ({pricing.discountPercent}% OFF):</span>
+                        <span className="text-accent font-bold">Economia do Pacote:</span>
                         <span className="text-accent font-bold">- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
                      </div>
                    )}
@@ -941,7 +991,7 @@ export default function QuizPage() {
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl">
           <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">CRIAR MAIS FIGURINHAS?</DialogTitle>
           <DialogDescription className="text-center text-muted-foreground -mt-2">
-            Quanto mais figurinhas você cria, maior o desconto. Ganhe +20% de desconto a cada figurinha adicionada.
+            Quanto mais figurinhas, maior a economia. Adicione mais figurinhas e desbloqueie descontos progressivos.
           </DialogDescription>
           
           <div className="space-y-3 py-4">
@@ -952,24 +1002,25 @@ export default function QuizPage() {
                return (
                  <div 
                    key={qty}
-                   className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                   className={cn(
+                     "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
                      isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-primary/10 hover:border-primary/30'
-                   }`}
+                   )}
                    onClick={() => setTotalQuantity(qty)}
                  >
                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-primary/20'}`}>
+                      <div className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                        isSelected ? 'border-primary bg-primary' : 'border-primary/20'
+                      )}>
                          {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                       </div>
                       <div>
                         <p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
-                        {qty === 1 ? (
-                          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">Sem desconto</p>
-                        ) : (
-                          <p className="text-[10px] text-accent font-bold mt-1 uppercase">
-                            {info.discountPercent}% OFF {qty === 4 ? '— Melhor oferta' : ''}
-                          </p>
-                        )}
+                        <div className="mt-1 flex items-center gap-2">
+                          <p className="text-[10px] text-muted-foreground line-through font-bold">R$ {(qty * BASE_PRICE_PER_UNIT).toFixed(2).replace('.', ',')}</p>
+                          {qty === 4 && <span className="text-[9px] bg-accent text-white px-1.5 py-0.5 rounded font-black uppercase">MAIOR ECONOMIA</span>}
+                        </div>
                       </div>
                    </div>
                    <div className="text-right">
@@ -997,6 +1048,26 @@ export default function QuizPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <style jsx global>{`
+        @keyframes fly-to-cart {
+          0% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: translate(-50%, -150%) scale(0.6);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translate(0, -300%) scale(0.2);
+            opacity: 0;
+          }
+        }
+        .animate-fly-to-cart {
+          animation: fly-to-cart 0.8s ease-in-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
