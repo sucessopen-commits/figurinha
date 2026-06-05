@@ -40,6 +40,27 @@ type QuizData = StickerData & {
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
+// Constantes de Precificação
+const BASE_PRICE_PER_UNIT = 12.90;
+
+const getPricingInfo = (qty: number) => {
+  let discountRate = 0;
+  if (qty === 2) discountRate = 0.20;
+  if (qty === 3) discountRate = 0.40;
+  if (qty === 4) discountRate = 0.60;
+
+  const fullPrice = qty * BASE_PRICE_PER_UNIT;
+  const savings = fullPrice * discountRate;
+  const total = fullPrice - savings;
+
+  return {
+    total,
+    savings,
+    fullPrice,
+    discountPercent: Math.round(discountRate * 100)
+  };
+};
+
 export default function QuizPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
@@ -261,11 +282,7 @@ export default function QuizPage() {
     }
   };
 
-  // Pricing
-  const basePrice = 12.90;
-  const extraPrice = 10.32; // 20% OFF
-  const totalPrice = basePrice + (totalQuantity - 1) * extraPrice;
-  const totalSavings = (totalQuantity - 1) * 2.58;
+  const pricing = getPricingInfo(totalQuantity);
 
   const officialStep = step >= 1 && step <= 4 ? step : 4;
   const progressPercent = (officialStep / 4) * 100;
@@ -693,16 +710,13 @@ export default function QuizPage() {
 
                 <div className="space-y-4 pt-4">
                   <div className="flex flex-col items-center">
-                    {totalQuantity > 1 && (
-                      <span className="text-accent font-bold text-xs uppercase mb-1">Total para {totalQuantity} figurinhas</span>
-                    )}
                     <div className="flex items-start gap-1">
                       <span className="text-accent font-bold text-xl mt-1">R$</span>
-                      <span className="text-accent font-headline text-6xl leading-none">{totalPrice.toFixed(2).replace('.', ',')}</span>
+                      <span className="text-accent font-headline text-6xl leading-none">{pricing.total.toFixed(2).replace('.', ',')}</span>
                     </div>
-                    {totalSavings > 0 && (
+                    {pricing.savings > 0 && (
                       <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
-                        VOCÊ ECONOMIZA R$ {totalSavings.toFixed(2).replace('.', ',')}
+                        VOCÊ ECONOMIZA R$ {pricing.savings.toFixed(2).replace('.', ',')} ({pricing.discountPercent}% OFF)
                       </p>
                     )}
                   </div>
@@ -828,7 +842,7 @@ export default function QuizPage() {
                       <p className="text-primary font-bold text-sm truncate">{formData.childName}</p>
                       <p className="text-[10px] text-muted-foreground uppercase">Figurinha Principal</p>
                     </div>
-                    <span className="text-primary font-bold text-sm">R$ 12,90</span>
+                    <span className="text-primary font-bold text-sm">R$ {BASE_PRICE_PER_UNIT.toFixed(2).replace('.', ',')}</span>
                   </div>
 
                   {extraStickers.map((sticker, i) => (
@@ -841,8 +855,7 @@ export default function QuizPage() {
                         <p className="text-[10px] text-muted-foreground uppercase">Figurinha Extra {i+2}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-accent font-bold text-sm">R$ 10,32</p>
-                        <p className="text-[8px] text-accent font-bold uppercase">20% OFF</p>
+                        <p className="text-accent font-bold text-sm">R$ {BASE_PRICE_PER_UNIT.toFixed(2).replace('.', ',')}</p>
                       </div>
                     </div>
                   ))}
@@ -853,15 +866,19 @@ export default function QuizPage() {
                       <span className="text-muted-foreground">Total de figurinhas:</span>
                       <span className="text-primary font-bold">{totalQuantity}</span>
                    </div>
-                   {totalSavings > 0 && (
+                   <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span className="text-muted-foreground line-through">R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
+                   </div>
+                   {pricing.savings > 0 && (
                      <div className="flex justify-between text-sm">
-                        <span className="text-accent font-bold">Desconto aplicado:</span>
-                        <span className="text-accent font-bold">- R$ {totalSavings.toFixed(2).replace('.', ',')}</span>
+                        <span className="text-accent font-bold">Desconto acumulado ({pricing.discountPercent}% OFF):</span>
+                        <span className="text-accent font-bold">- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
                      </div>
                    )}
                    <div className="flex justify-between text-xl border-t border-primary/10 pt-2 mt-2">
                       <span className="text-primary font-headline uppercase">TOTAL:</span>
-                      <span className="text-primary font-headline">R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+                      <span className="text-primary font-headline">R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
                    </div>
                 </div>
 
@@ -924,13 +941,12 @@ export default function QuizPage() {
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl">
           <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">CRIAR MAIS FIGURINHAS?</DialogTitle>
           <DialogDescription className="text-center text-muted-foreground -mt-2">
-            Você já tem 1 figurinha no carrinho. Adicione mais figurinhas e ganhe 20% de desconto em cada uma.
+            Quanto mais figurinhas você cria, maior o desconto. Ganhe +20% de desconto a cada figurinha adicionada.
           </DialogDescription>
           
           <div className="space-y-3 py-4">
              {[1, 2, 3, 4].map((qty) => {
-               const price = qty === 1 ? 12.90 : 12.90 + (qty - 1) * 10.32;
-               const savings = (qty - 1) * 2.58;
+               const info = getPricingInfo(qty);
                const isSelected = totalQuantity === qty;
 
                return (
@@ -939,7 +955,7 @@ export default function QuizPage() {
                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
                      isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-primary/10 hover:border-primary/30'
                    }`}
-                   onClick={() => handleContinueWithQuantity(qty)}
+                   onClick={() => setTotalQuantity(qty)}
                  >
                    <div className="flex items-center gap-3">
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-primary/20'}`}>
@@ -948,16 +964,18 @@ export default function QuizPage() {
                       <div>
                         <p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
                         {qty === 1 ? (
-                          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">Já adicionada</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">Sem desconto</p>
                         ) : (
-                          <p className="text-[10px] text-accent font-bold mt-1 uppercase">Até {qty-1} extras com 20% OFF</p>
+                          <p className="text-[10px] text-accent font-bold mt-1 uppercase">
+                            {info.discountPercent}% OFF {qty === 4 ? '— Melhor oferta' : ''}
+                          </p>
                         )}
                       </div>
                    </div>
                    <div className="text-right">
-                      <p className="text-primary font-headline text-xl leading-none">R$ {price.toFixed(2).replace('.', ',')}</p>
-                      {savings > 0 && (
-                        <p className="text-[9px] text-accent font-black uppercase mt-1">Economize R$ {savings.toFixed(2).replace('.', ',')}</p>
+                      <p className="text-primary font-headline text-xl leading-none">R$ {info.total.toFixed(2).replace('.', ',')}</p>
+                      {info.savings > 0 && (
+                        <p className="text-[9px] text-accent font-black uppercase mt-1">Economize R$ {info.savings.toFixed(2).replace('.', ',')}</p>
                       )}
                    </div>
                  </div>
@@ -970,8 +988,8 @@ export default function QuizPage() {
                className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg flex flex-col items-center justify-center leading-none"
                onClick={() => handleContinueWithQuantity(totalQuantity)}
              >
-                <span>CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}</span>
-                {totalQuantity > 1 && <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Total: R$ {totalPrice.toFixed(2).replace('.', ',')}</span>}
+                <span className="uppercase">CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}</span>
+                {totalQuantity > 1 && <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Total: R$ {pricing.total.toFixed(2).replace('.', ',')}</span>}
              </Button>
              <Button variant="ghost" className="w-full text-primary font-bold uppercase" onClick={() => setShowUpsellModal(false)}>
                 VOLTAR
