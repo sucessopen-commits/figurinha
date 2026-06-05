@@ -18,21 +18,27 @@ import {
   ShieldCheck, 
   Image as ImageIcon,
   Play,
-  Shirt
+  Shirt,
+  ShoppingCart,
+  Trash2,
+  Plus
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
-type QuizData = {
+type StickerData = {
   childName: string;
   birthDate: string;
-  email: string;
   weight: number;
   height: number;
   club: string;
   photoDataUri: string;
 };
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+type QuizData = StickerData & {
+  email: string;
+};
+
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export default function QuizPage() {
   const router = useRouter();
@@ -42,13 +48,28 @@ export default function QuizPage() {
   const [photoLoadingProgress, setPhotoLoadingProgress] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [pendingUploadType, setPendingUploadType] = useState<'gallery' | 'camera' | null>(null);
   const [processingText, setProcessingText] = useState("Iniciando processamento...");
   
+  // Cart State
+  const [totalQuantity, setTotalQuantity] = useState(1);
+  const [extraStickers, setExtraStickers] = useState<StickerData[]>([]);
+  const [currentExtraIdx, setCurrentExtraIdx] = useState(0);
+
   const [formData, setFormData] = useState<QuizData>({
     childName: "",
     birthDate: "",
     email: "",
+    weight: 30,
+    height: 120,
+    club: "",
+    photoDataUri: "",
+  });
+
+  const [currentExtraData, setCurrentExtraData] = useState<StickerData>({
+    childName: "",
+    birthDate: "",
     weight: 30,
     height: 120,
     club: "",
@@ -111,18 +132,22 @@ export default function QuizPage() {
     }
   }, [step]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isExtra = false) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, photoDataUri: reader.result as string });
+        if (isExtra) {
+          setCurrentExtraData({ ...currentExtraData, photoDataUri: reader.result as string });
+        } else {
+          setFormData({ ...formData, photoDataUri: reader.result as string });
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleOpenWarning = (type: 'gallery' | 'camera') => {
+  const handleOpenWarning = (type: 'gallery' | 'camera', isExtra = false) => {
     setPendingUploadType(type);
     setShowWarning(true);
   };
@@ -130,23 +155,23 @@ export default function QuizPage() {
   const confirmWarning = () => {
     setShowWarning(false);
     if (pendingUploadType) {
-      triggerUpload(pendingUploadType);
+      triggerUpload(pendingUploadType, step === 9);
       setPendingUploadType(null);
     }
   };
 
-  const triggerUpload = (type: 'gallery' | 'camera') => {
+  const triggerUpload = (type: 'gallery' | 'camera', isExtra = false) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     if (type === 'camera') {
       input.setAttribute('capture', 'user');
     }
-    input.onchange = (e: any) => handleFileChange(e);
+    input.onchange = (e: any) => handleFileChange(e, isExtra);
     input.click();
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, isExtra = false) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 8) value = value.slice(0, 8);
     
@@ -160,7 +185,11 @@ export default function QuizPage() {
         }
       }
     }
-    setFormData({ ...formData, birthDate: formattedValue });
+    if (isExtra) {
+      setCurrentExtraData({ ...currentExtraData, birthDate: formattedValue });
+    } else {
+      setFormData({ ...formData, birthDate: formattedValue });
+    }
   };
 
   const startGeneration = async () => {
@@ -195,6 +224,49 @@ export default function QuizPage() {
     }
   };
 
+  const handleContinueWithQuantity = (qty: number) => {
+    setTotalQuantity(qty);
+    setShowUpsellModal(false);
+    if (qty > 1) {
+      setExtraStickers([]);
+      setCurrentExtraIdx(0);
+      setCurrentExtraData({
+        childName: "",
+        birthDate: "",
+        weight: 30,
+        height: 120,
+        club: "",
+        photoDataUri: "",
+      });
+      setStep(9);
+    }
+  };
+
+  const handleNextExtra = () => {
+    const updatedExtras = [...extraStickers, currentExtraData];
+    setExtraStickers(updatedExtras);
+    
+    if (updatedExtras.length < totalQuantity - 1) {
+      setCurrentExtraIdx(updatedExtras.length);
+      setCurrentExtraData({
+        childName: "",
+        birthDate: "",
+        weight: 30,
+        height: 120,
+        club: "",
+        photoDataUri: "",
+      });
+    } else {
+      setStep(10);
+    }
+  };
+
+  // Pricing
+  const basePrice = 12.90;
+  const extraPrice = 10.32; // 20% OFF
+  const totalPrice = basePrice + (totalQuantity - 1) * extraPrice;
+  const totalSavings = (totalQuantity - 1) * 2.58;
+
   const officialStep = step >= 1 && step <= 4 ? step : 4;
   const progressPercent = (officialStep / 4) * 100;
 
@@ -202,7 +274,7 @@ export default function QuizPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white">
       <div className="w-full max-w-lg space-y-6">
         
-        {step < 5 && step !== 7 && step !== 8 && (
+        {step < 5 && (
           <div className="space-y-4">
             <div className="flex justify-between items-center px-1">
               <span className="text-primary font-bold text-sm tracking-widest uppercase">
@@ -597,6 +669,11 @@ export default function QuizPage() {
             {step === 8 && (
               <div className="space-y-6 animate-in zoom-in-95 duration-500 text-center">
                 <div className="text-center space-y-1">
+                  <div className="flex justify-center mb-2">
+                    <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                      <ShoppingCart className="w-3 h-3" /> {totalQuantity} {totalQuantity === 1 ? 'Figurinha' : 'Figurinhas'} no carrinho
+                    </span>
+                  </div>
                   <span className="text-5xl">⚽</span>
                   <h2 className="font-headline text-5xl text-primary uppercase leading-none mt-2">GOOLL!</h2>
                   <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
@@ -616,14 +693,18 @@ export default function QuizPage() {
 
                 <div className="space-y-4 pt-4">
                   <div className="flex flex-col items-center">
-                    <span className="text-muted-foreground line-through text-sm">De R$ 69,90</span>
+                    {totalQuantity > 1 && (
+                      <span className="text-accent font-bold text-xs uppercase mb-1">Total para {totalQuantity} figurinhas</span>
+                    )}
                     <div className="flex items-start gap-1">
                       <span className="text-accent font-bold text-xl mt-1">R$</span>
-                      <span className="text-accent font-headline text-6xl leading-none">12,90</span>
+                      <span className="text-accent font-headline text-6xl leading-none">{totalPrice.toFixed(2).replace('.', ',')}</span>
                     </div>
-                    <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
-                      OFERTA EXCLUSIVA DE LANÇAMENTO
-                    </p>
+                    {totalSavings > 0 && (
+                      <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
+                        VOCÊ ECONOMIZA R$ {totalSavings.toFixed(2).replace('.', ',')}
+                      </p>
+                    )}
                   </div>
 
                   <Button className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/40 pulse-button flex flex-col items-center justify-center leading-none">
@@ -631,20 +712,165 @@ export default function QuizPage() {
                     <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Acesso imediato via e-mail</span>
                   </Button>
                   
-                  <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => {
-                    setStep(1);
-                    setResult(null);
-                    setFormData({
-                      childName: "",
-                      birthDate: "",
-                      email: "",
-                      weight: 30,
-                      height: 120,
-                      club: "",
-                      photoDataUri: "",
-                    });
-                  }}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-12 rounded-full border-primary text-primary font-bold" 
+                    onClick={() => setShowUpsellModal(true)}
+                  >
                     CRIAR OUTRA FIGURINHA
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {step === 9 && (
+              <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                <div className="text-center space-y-2">
+                  <div className="flex justify-center mb-1">
+                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase">FIGURINHA EXTRA {currentExtraIdx + 2} de {totalQuantity}</span>
+                  </div>
+                  <h2 className="font-headline text-3xl text-primary uppercase leading-tight">DADOS DO CRAQUE EXTRA</h2>
+                  <p className="text-muted-foreground text-sm">Preencha apenas as informações das novas figurinhas.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-primary font-bold">NOME DO CRAQUE</Label>
+                    <Input
+                      placeholder="Ex: Pedro Silva"
+                      className="h-12 border-2 rounded-xl"
+                      value={currentExtraData.childName}
+                      onChange={(e) => setCurrentExtraData({ ...currentExtraData, childName: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-primary font-bold">NASCIMENTO</Label>
+                      <Input
+                        placeholder="DD/MM/AAAA"
+                        className="h-12 border-2 rounded-xl"
+                        value={currentExtraData.birthDate}
+                        onChange={(e) => handleDateChange(e, true)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-primary font-bold">TIME</Label>
+                      <Input
+                        placeholder="Ex: Vasco"
+                        className="h-12 border-2 rounded-xl"
+                        value={currentExtraData.club}
+                        onChange={(e) => setCurrentExtraData({ ...currentExtraData, club: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-primary font-bold">PESO (KG)</Label>
+                      <Input
+                        type="number"
+                        className="h-12 border-2 rounded-xl"
+                        value={currentExtraData.weight}
+                        onChange={(e) => setCurrentExtraData({ ...currentExtraData, weight: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-primary font-bold">ALTURA (CM)</Label>
+                      <Input
+                        type="number"
+                        className="h-12 border-2 rounded-xl"
+                        value={currentExtraData.height}
+                        onChange={(e) => setCurrentExtraData({ ...currentExtraData, height: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <Label className="text-primary font-bold block text-center">FOTO DO CRAQUE</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('gallery', true)}>
+                        <ImageIcon className="w-3 h-3" /> Galeria
+                      </Button>
+                      <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('camera', true)}>
+                        <Camera className="w-3 h-3" /> Câmera
+                      </Button>
+                    </div>
+                    {currentExtraData.photoDataUri && (
+                      <div className="relative w-20 h-20 mx-auto rounded-xl overflow-hidden border-2 border-primary/20">
+                         <Image src={currentExtraData.photoDataUri} alt="Extra Preview" fill className="object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Button 
+                  className="w-full h-14 text-lg font-bold bg-primary rounded-full shadow-lg"
+                  disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10}
+                  onClick={handleNextExtra}
+                >
+                  {currentExtraIdx < totalQuantity - 2 ? 'PRÓXIMA FIGURINHA' : 'REVISAR PEDIDO'} <ChevronRight className="ml-2 w-5 h-5" />
+                </Button>
+              </div>
+            )}
+
+            {step === 10 && (
+              <div className="space-y-6 animate-in zoom-in-95 duration-300">
+                <div className="text-center space-y-2">
+                  <h2 className="font-headline text-3xl text-primary uppercase">REVISE SEU PEDIDO</h2>
+                  <p className="text-muted-foreground text-sm">Confirme as figurinhas do seu carrinho.</p>
+                </div>
+
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                  <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative">
+                       <Image src={formData.photoDataUri} alt="Orig" fill className="object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-primary font-bold text-sm truncate">{formData.childName}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">Figurinha Principal</p>
+                    </div>
+                    <span className="text-primary font-bold text-sm">R$ 12,90</span>
+                  </div>
+
+                  {extraStickers.map((sticker, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-accent/5 rounded-2xl border border-accent/10">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative">
+                         <Image src={sticker.photoDataUri} alt={`Extra ${i}`} fill className="object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-accent font-bold text-sm truncate">{sticker.childName}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">Figurinha Extra {i+2}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-accent font-bold text-sm">R$ 10,32</p>
+                        <p className="text-[8px] text-accent font-bold uppercase">20% OFF</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-primary/5 p-4 rounded-2xl space-y-2 border-2 border-primary/10">
+                   <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Total de figurinhas:</span>
+                      <span className="text-primary font-bold">{totalQuantity}</span>
+                   </div>
+                   {totalSavings > 0 && (
+                     <div className="flex justify-between text-sm">
+                        <span className="text-accent font-bold">Desconto aplicado:</span>
+                        <span className="text-accent font-bold">- R$ {totalSavings.toFixed(2).replace('.', ',')}</span>
+                     </div>
+                   )}
+                   <div className="flex justify-between text-xl border-t border-primary/10 pt-2 mt-2">
+                      <span className="text-primary font-headline uppercase">TOTAL:</span>
+                      <span className="text-primary font-headline">R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Button className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg pulse-button">
+                    FINALIZAR PEDIDO <ChevronRight className="ml-2 w-6 h-6" />
+                  </Button>
+                  <Button variant="ghost" className="w-full h-10 text-primary font-bold text-sm uppercase" onClick={() => setStep(8)}>
+                    VOLTAR PARA A FIGURINHA
                   </Button>
                 </div>
               </div>
@@ -659,6 +885,7 @@ export default function QuizPage() {
         </div>
       </div>
 
+      {/* Warning Modal */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl animate-in zoom-in-95 duration-300">
           <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">AVISO</DialogTitle>
@@ -688,6 +915,67 @@ export default function QuizPage() {
             >
               ENTENDI
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upsell Modal */}
+      <Dialog open={showUpsellModal} onOpenChange={setShowUpsellModal}>
+        <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl">
+          <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">CRIAR MAIS FIGURINHAS?</DialogTitle>
+          <DialogDescription className="text-center text-muted-foreground -mt-2">
+            Você já tem 1 figurinha no carrinho. Adicione mais figurinhas e ganhe 20% de desconto em cada uma.
+          </DialogDescription>
+          
+          <div className="space-y-3 py-4">
+             {[1, 2, 3, 4].map((qty) => {
+               const price = qty === 1 ? 12.90 : 12.90 + (qty - 1) * 10.32;
+               const savings = (qty - 1) * 2.58;
+               const isSelected = totalQuantity === qty;
+
+               return (
+                 <div 
+                   key={qty}
+                   className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                     isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-primary/10 hover:border-primary/30'
+                   }`}
+                   onClick={() => handleContinueWithQuantity(qty)}
+                 >
+                   <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary bg-primary' : 'border-primary/20'}`}>
+                         {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                      </div>
+                      <div>
+                        <p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
+                        {qty === 1 ? (
+                          <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">Já adicionada</p>
+                        ) : (
+                          <p className="text-[10px] text-accent font-bold mt-1 uppercase">Até {qty-1} extras com 20% OFF</p>
+                        )}
+                      </div>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-primary font-headline text-xl leading-none">R$ {price.toFixed(2).replace('.', ',')}</p>
+                      {savings > 0 && (
+                        <p className="text-[9px] text-accent font-black uppercase mt-1">Economize R$ {savings.toFixed(2).replace('.', ',')}</p>
+                      )}
+                   </div>
+                 </div>
+               );
+             })}
+          </div>
+
+          <div className="space-y-3">
+             <Button 
+               className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg flex flex-col items-center justify-center leading-none"
+               onClick={() => handleContinueWithQuantity(totalQuantity)}
+             >
+                <span>CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}</span>
+                {totalQuantity > 1 && <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Total: R$ {totalPrice.toFixed(2).replace('.', ',')}</span>}
+             </Button>
+             <Button variant="ghost" className="w-full text-primary font-bold uppercase" onClick={() => setShowUpsellModal(false)}>
+                VOLTAR
+             </Button>
           </div>
         </DialogContent>
       </Dialog>
