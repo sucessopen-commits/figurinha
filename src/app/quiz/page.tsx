@@ -605,37 +605,12 @@ export default function QuizPage() {
                 <div className="relative w-full max-w-[320px] mx-auto bg-white shadow-2xl overflow-hidden border border-gray-100">
                   <div className="relative w-full aspect-[3/4]">
                     <Image 
-                      src={result || 'https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png'} 
+                      src="https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png" 
                       alt="Figurinha Preview" 
                       fill 
                       className="object-contain"
                       priority
                     />
-                    
-                    <div className="absolute inset-0 pointer-events-none">
-                      {/* Name Block */}
-                      <div className="absolute top-[84.5%] left-50% -translate-x-1/2 w-[72%] text-center">
-                        <h3 className="font-headline text-white text-[clamp(18px,6vw,26px)] leading-tight uppercase drop-shadow-md truncate">
-                          {formData.childName || "CRAQUE"}
-                        </h3>
-                      </div>
-                      
-                      {/* Info Line Block */}
-                      <div className="absolute top-[88.2%] left-50% -translate-x-1/2 w-[78%] text-center">
-                        <p className="text-white font-bold text-[clamp(8px,2.5vw,11px)] uppercase tracking-tight drop-shadow-sm truncate">
-                          {formData.birthDate || "00/00/0000"} | {formData.height || "0"} cm | {formData.weight || "0"} kg
-                        </p>
-                      </div>
-                      
-                      {/* Club Block */}
-                      <div className="absolute top-[93.3%] left-[45%] -translate-x-1/2 w-[56%] text-center">
-                        <p className="text-white font-bold text-[clamp(10px,3.2vw,13px)] uppercase tracking-tighter drop-shadow-sm truncate">
-                          {formData.club || "TIME DO CORAÇÃO"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="absolute inset-0 watermark-overlay opacity-30 pointer-events-none" />
                   </div>
                 </div>
 
