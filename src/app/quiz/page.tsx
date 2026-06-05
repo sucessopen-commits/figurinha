@@ -18,7 +18,11 @@ import {
   CheckCircle2, 
   ShieldCheck, 
   Image as ImageIcon,
-  X
+  X,
+  Play,
+  Trophy,
+  Gift,
+  ArrowRight
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -32,10 +36,6 @@ type QuizData = {
   photoDataUri: string;
 };
 
-// 1-4: Official Steps
-// 5: Analysis/Loading Photo (5s)
-// 6: Final Confirmation (with Summary)
-// 7: AI Generating Result
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export default function QuizPage() {
@@ -47,6 +47,7 @@ export default function QuizPage() {
   const [result, setResult] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [pendingUploadType, setPendingUploadType] = useState<'gallery' | 'camera' | null>(null);
+  const [processingText, setProcessingText] = useState("Iniciando processamento...");
   
   const [formData, setFormData] = useState<QuizData>({
     childName: "",
@@ -74,7 +75,6 @@ export default function QuizPage() {
     return age;
   };
 
-  // Handle auto-transition for Step 5 (Analysis Loading)
   useEffect(() => {
     if (step === 5) {
       setPhotoLoadingProgress(0);
@@ -96,6 +96,24 @@ export default function QuizPage() {
       return () => clearInterval(timer);
     }
   }, [step]);
+
+  useEffect(() => {
+    if (step === 7 && !result) {
+      const phrases = [
+        "Ajustando uniforme...",
+        "Preparando o estilo da figurinha...",
+        "Finalizando os detalhes do craque...",
+        "Aplicando efeitos especiais...",
+        "Quase pronto para o campo!",
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        setProcessingText(phrases[i % phrases.length]);
+        i++;
+      }, 2500);
+      return () => clearInterval(interval);
+    }
+  }, [step, result]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -159,7 +177,7 @@ export default function QuizPage() {
           clearInterval(interval);
           return 95;
         }
-        return prev + Math.random() * 15;
+        return prev + Math.random() * 10;
       });
     }, 400);
 
@@ -181,19 +199,13 @@ export default function QuizPage() {
     }
   };
 
-  const getOfficialStep = () => {
-    if (step >= 1 && step <= 4) return step;
-    return 4;
-  };
-
-  const officialStep = getOfficialStep();
+  const officialStep = step >= 1 && step <= 4 ? step : 4;
   const progressPercent = (officialStep / 4) * 100;
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white">
       <div className="w-full max-w-lg space-y-6">
         
-        {/* Progress Bar - Hidden in loading/result states */}
         {step < 5 && step !== 7 && (
           <div className="space-y-4">
             <div className="flex justify-between items-center px-1">
@@ -218,7 +230,6 @@ export default function QuizPage() {
         <Card className="border-none shadow-2xl rounded-[24px] md:rounded-[32px] overflow-hidden bg-white">
           <CardContent className="p-6 md:p-8">
             
-            {/* STEP 1: NOME */}
             {step === 1 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
@@ -248,7 +259,6 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 2: NASCIMENTO E EMAIL */}
             {step === 2 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
@@ -296,7 +306,6 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 3: CLUBE E DADOS */}
             {step === 3 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
@@ -347,7 +356,6 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 4: SOLICITAÇÃO DA FOTO */}
             {step === 4 && (
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
@@ -360,7 +368,6 @@ export default function QuizPage() {
                 
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Opção 1: Arquivo */}
                     <div 
                       className="group cursor-pointer border-2 border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5 rounded-2xl p-6 transition-all text-center space-y-2"
                       onClick={() => handleOpenWarning('gallery')}
@@ -374,7 +381,6 @@ export default function QuizPage() {
                       </div>
                     </div>
 
-                    {/* Opção 2: Câmera */}
                     <div 
                       className="group cursor-pointer border-2 border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5 rounded-2xl p-6 transition-all text-center space-y-2"
                       onClick={() => handleOpenWarning('camera')}
@@ -416,7 +422,6 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 5: TELA DE CARREGAMENTO / ANÁLISE */}
             {step === 5 && (
               <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
                 <h2 className="font-headline text-3xl text-primary uppercase">CARREGANDO FOTO</h2>
@@ -446,7 +451,6 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 6: CONFIRMAÇÃO FINAL COM RESUMO DOS DADOS */}
             {step === 6 && (
               <div className="space-y-6 animate-in zoom-in-95 duration-300">
                 <div className="text-center space-y-2">
@@ -500,60 +504,118 @@ export default function QuizPage() {
               </div>
             )}
 
-            {/* STEP 7: GERANDO FIGURINHA / RESULTADO */}
             {step === 7 && (
-              <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
+              <div className="space-y-6 animate-in fade-in duration-500 text-center">
                 {!result ? (
-                  <div className="space-y-8">
-                    <div className="relative w-32 h-32 mx-auto">
-                      <div className="absolute inset-0 border-4 border-primary/10 rounded-full" />
-                      <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                         <span className="text-2xl font-bold text-primary">{Math.round(loadingProgress)}%</span>
+                  <div className="space-y-6">
+                    <div className="text-center space-y-1">
+                      <h2 className="font-headline text-3xl text-primary uppercase">GERANDO SUA FIGURINHA</h2>
+                      <p className="text-muted-foreground text-xs font-bold">Não saia dessa tela, leva até 2 minutos.</p>
+                    </div>
+
+                    <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 flex flex-col items-center justify-center space-y-4">
+                      <div className="absolute top-4 left-4 right-4 bg-primary/10 py-2 rounded-xl">
+                        <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Assista enquanto fica pronto</p>
+                      </div>
+                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                        <Play className="text-white fill-white w-6 h-6 ml-1" />
+                      </div>
+                      <div className="px-6">
+                        <p className="text-primary font-headline text-xl uppercase opacity-40">Espaço Reservado para VSL</p>
+                        <p className="text-xs text-muted-foreground mt-2 italic">Apresentação exclusiva</p>
                       </div>
                     </div>
-                    
-                    <div className="space-y-3">
-                      <h2 className="font-headline text-3xl text-primary uppercase leading-none">NOSSOS ROBÔS ESTÃO TRABALHANDO!</h2>
-                      <div className="bg-accent/10 p-4 rounded-xl border border-accent/20">
-                         <p className="text-accent font-bold flex items-center justify-center text-sm md:text-base">
-                           <DollarSign className="mr-1 w-5 h-5" /> VOCÊ ESTÁ CONCORRENDO A UM PRÊMIO DE <span className="ml-1 text-2xl">MIL REAIS</span>
-                         </p>
-                         <p className="text-xs text-accent/80 mt-1">Após a geração, você receberá seu número da sorte.</p>
+
+                    <div className="bg-accent/5 border-2 border-accent/20 p-5 rounded-2xl space-y-3 shadow-sm relative overflow-hidden group">
+                      <div className="absolute -top-4 -right-4 w-12 h-12 bg-accent/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                      
+                      <p className="text-primary font-bold text-xs uppercase tracking-tight">
+                        AO GARANTIR SUA FIGURINHA HOJE, VOCÊ CONCORRE A:
+                      </p>
+
+                      <div className="space-y-2">
+                        <div className="bg-white/80 p-3 rounded-xl border border-accent/20 flex items-center gap-3">
+                          <Trophy className="w-6 h-6 text-accent shrink-0" />
+                          <p className="text-left text-[11px] font-bold text-primary leading-tight uppercase">
+                            🎽 1 Camisa Original Autografada por Jogadores do Brasil
+                          </p>
+                        </div>
+                        
+                        <p className="text-[10px] font-black text-primary/30">OU</p>
+
+                        <div className="bg-accent p-3 rounded-xl flex items-center gap-3 shadow-md shadow-accent/20">
+                          <Gift className="w-6 h-6 text-white shrink-0" />
+                          <p className="text-left text-sm font-bold text-white uppercase tracking-tighter">
+                            💸 R$1.000 NO PIX
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-muted-foreground italic text-sm">"Estilizando uniforme... Ajustando cores... Aplicando efeitos de craque..."</p>
+
+                      <p className="text-[10px] text-primary/60 font-medium">
+                        Seu número da sorte será enviado após a confirmação.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-primary font-bold text-sm italic">{processingText}</p>
+                        <div className="flex justify-between items-end text-primary font-black text-[10px] uppercase">
+                          <span>Processando...</span>
+                          <span>{Math.round(loadingProgress)}%</span>
+                        </div>
+                        <Progress value={loadingProgress} className="h-2 bg-primary/10" />
+                      </div>
+
+                      <Button className="w-full h-16 text-lg font-bold bg-primary rounded-full shadow-xl shadow-primary/30 pulse-button uppercase tracking-tight">
+                        QUERO PARTICIPAR E RECEBER MINHA FIGURINHA
+                      </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                    <div className="text-center space-y-2">
-                      <span className="text-4xl">✅</span>
-                      <h2 className="font-headline text-3xl text-primary uppercase">FIGURINHA GERADA!</h2>
-                      <p className="text-muted-foreground">Veja como ficou o seu pequeno craque.</p>
+                    <div className="text-center space-y-1">
+                      <span className="text-5xl">⚽</span>
+                      <h2 className="font-headline text-5xl text-primary uppercase leading-none mt-2">GOOLL!</h2>
+                      <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
                     </div>
 
                     <div className="relative aspect-[3/4] max-w-[280px] mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-primary">
                        <Image src={result} alt="Figurinha Preview" fill className="object-cover" />
                        <div className="absolute inset-0 watermark-overlay opacity-60 pointer-events-none" />
-                       <div className="absolute inset-0 flex items-center justify-center rotate-[-35deg] pointer-events-none">
-                          <span className="text-white/40 font-headline text-4xl border-4 border-white/40 px-4 py-2">PRÉVIA</span>
-                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4">
+                    <div className="space-y-4 pt-2">
                       <div className="flex flex-col items-center">
                         <span className="text-muted-foreground line-through text-sm">De R$ 69,90</span>
-                        <span className="text-accent font-headline text-5xl">R$ 29,90</span>
-                        <p className="text-accent text-xs font-bold mt-1">PREÇO PROMOCIONAL POR TEMPO LIMITADO</p>
+                        <div className="flex items-start gap-1">
+                          <span className="text-accent font-bold text-xl mt-1">R$</span>
+                          <span className="text-accent font-headline text-6xl leading-none">12,90</span>
+                        </div>
+                        <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
+                          OFERTA EXCLUSIVA DE LANÇAMENTO
+                        </p>
                       </div>
 
-                      <Button className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-xl pulse-button">
-                        BAIXAR EM ALTA RESOLUÇÃO
+                      <Button className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/40 pulse-button flex flex-col items-center justify-center leading-none">
+                        <span>RECEBER MINHA FIGURINHA</span>
+                        <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Acesso imediato via e-mail</span>
                       </Button>
                       
-                      <p className="text-xs text-muted-foreground">
-                        Ao confirmar, você recebe o arquivo digital sem marca d'água pronto para imprimir e colecionar.
-                      </p>
+                      <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => {
+                        setStep(1);
+                        setResult(null);
+                        setFormData({
+                          childName: "",
+                          birthDate: "",
+                          email: "",
+                          weight: 30,
+                          height: 120,
+                          club: "",
+                          photoDataUri: "",
+                        });
+                      }}>
+                        CRIAR OUTRA FIGURINHA
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -562,7 +624,6 @@ export default function QuizPage() {
           </CardContent>
         </Card>
 
-        {/* Support Info */}
         <div className="text-center">
           <p className="text-primary font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 opacity-60 uppercase tracking-widest">
             <ShieldCheck className="w-4 h-4" /> SEUS DADOS ESTÃO PROTEGIDOS
@@ -570,7 +631,6 @@ export default function QuizPage() {
         </div>
       </div>
 
-      {/* MODAL DE AVISO */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl animate-in zoom-in-95 duration-300">
           <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">AVISO</DialogTitle>
