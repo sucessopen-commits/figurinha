@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -61,4 +62,17 @@
   0% { transform: scale(1); }
   50% { transform: scale(1.03); }
   100% { transform: scale(1); }
+}
+
+.animate-float {
+  animation: float-animation 4s ease-in-out infinite;
+}
+
+@keyframes float-animation {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
 }
