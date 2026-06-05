@@ -24,7 +24,7 @@ function StickerShowcase() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-[320px] md:max-w-[450px] mx-auto h-[350px] md:h-[500px] flex items-center justify-center perspective-1000 mt-8 mb-8">
+    <div className="relative w-full max-w-[100%] md:max-w-[500px] mx-auto h-[320px] sm:h-[380px] md:h-[500px] flex items-center justify-center perspective-1000 mt-4 mb-4 overflow-visible">
       <div className="relative w-full h-full flex items-center justify-center">
         {STICKER_IMAGES.map((src, index) => {
           let position = (index - activeIndex + 3) % 3;
@@ -45,13 +45,13 @@ function StickerShowcase() {
             zIndex = 10;
             scale = 0.88;
             rotate = 8;
-            translateX = "35%";
+            translateX = "28%"; // Reduzido para mobile safety
             opacity = 0.7;
           } else { // Esquerda
             zIndex = 10;
             scale = 0.88;
             rotate = -8;
-            translateX = "-35%";
+            translateX = "-28%"; // Reduzido para mobile safety
             opacity = 0.7;
           }
 
@@ -65,13 +65,13 @@ function StickerShowcase() {
                 opacity,
               }}
             >
-              <div className="relative w-[220px] h-[300px] md:w-[320px] md:h-[440px] rounded-[24px] overflow-hidden shadow-2xl animate-float bg-white">
+              <div className="relative w-[190px] h-[260px] sm:w-[240px] sm:h-[330px] md:w-[320px] md:h-[440px] rounded-[18px] md:rounded-[24px] overflow-hidden shadow-2xl animate-float bg-white">
                 <Image
                   src={src}
                   alt={`Figurinha ${index + 1}`}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 220px, 320px"
+                  sizes="(max-width: 768px) 190px, 320px"
                   priority
                 />
               </div>
@@ -85,17 +85,19 @@ function StickerShowcase() {
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen pb-12 overflow-x-hidden bg-background">
-      <section className="container mx-auto px-4 pt-12 md:pt-20 flex flex-col items-center text-center">
+    <main className="min-h-screen flex flex-col bg-background overflow-x-hidden selection:bg-primary selection:text-white">
+      <section className="container mx-auto px-4 py-6 md:py-12 flex flex-col items-center text-center max-w-full">
         
-        {/* 1. HEADLINE ACIMA DAS FIGURINHAS */}
-        <div className="max-w-4xl mx-auto space-y-4 mb-4">
-          <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1 rounded-full mb-2">
-            <Trophy className="w-4 h-4 text-primary" />
-            <span className="text-primary font-bold text-xs tracking-widest uppercase">EDIÇÃO LIMITADA COPA</span>
+        {/* 1. SELO E HEADLINE ACIMA DAS FIGURINHAS */}
+        <div className="w-full max-w-4xl mx-auto space-y-3 md:space-y-6 mb-2">
+          <div className="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
+            <Trophy className="w-3 h-3 md:w-4 h-4 text-primary" />
+            <span className="text-primary font-bold text-[10px] md:text-xs tracking-widest uppercase">
+              EDIÇÃO LIMITADA COPA
+            </span>
           </div>
           
-          <h1 className="font-headline text-5xl md:text-8xl text-primary leading-[0.9] drop-shadow-sm uppercase">
+          <h1 className="font-headline text-[clamp(2.25rem,12vw,5.5rem)] text-primary leading-[0.85] drop-shadow-sm uppercase">
             TRANSFORME SEU FILHO <br />
             EM UM <span className="text-white drop-shadow-[0_2px_0_rgba(24,58,158,1)]">CRAQUE REAL!</span>
           </h1>
@@ -104,25 +106,30 @@ export default function HomePage() {
         {/* 2. BLOCO DAS FIGURINHAS CENTRALIZADO */}
         <StickerShowcase />
 
-        {/* 3. CTA ABAIXO DAS FIGURINHAS */}
-        <div className="max-w-2xl mx-auto space-y-8 mt-4">
-          <p className="text-primary/90 text-lg md:text-2xl font-medium leading-relaxed">
+        {/* 3. TEXTO E CTA ABAIXO DAS FIGURINHAS */}
+        <div className="w-full max-w-2xl mx-auto space-y-4 md:space-y-8 mt-2">
+          <p className="text-primary/90 text-base md:text-2xl font-medium leading-tight md:leading-relaxed px-2">
             Crie uma figurinha profissional e colecionável em segundos usando Inteligência Artificial.
           </p>
 
-          <Link href="/quiz">
-            <Button size="lg" className="h-20 px-12 text-2xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-2xl shadow-primary/40 pulse-button group">
+          <Link href="/quiz" className="block w-full">
+            <Button 
+              size="lg" 
+              className="w-full md:w-auto h-16 md:h-20 px-8 md:px-12 text-lg md:text-2xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-xl md:shadow-2xl shadow-primary/40 pulse-button group"
+            >
               CRIAR MINHA FIGURINHA
-              <ChevronRight className="ml-3 w-8 h-8 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="ml-2 md:ml-3 w-6 h-6 md:w-8 h-8 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
         </div>
 
       </section>
 
-      {/* Estilos específicos para remover elementos e manter o visual limpo */}
+      {/* Estilos específicos para garantir o visual limpo */}
       <style jsx global>{`
-        /* Garantir que o container das figurinhas não corte o conteúdo */
+        body {
+          overflow-x: hidden;
+        }
         .perspective-1000 {
           perspective: 1000px;
           overflow: visible !important;
