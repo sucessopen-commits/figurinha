@@ -24,7 +24,7 @@ function StickerShowcase() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-[360px] md:max-w-[500px] mx-auto h-[280px] sm:h-[330px] md:h-[500px] flex items-center justify-center perspective-1000 mt-6 md:mt-10 mb-4 overflow-visible">
+    <div className="relative w-full max-w-[380px] md:max-w-[550px] mx-auto h-[310px] sm:h-[360px] md:h-[550px] flex items-center justify-center perspective-1000 mt-10 md:mt-16 mb-8 md:mb-12 overflow-visible">
       <div className="relative w-full h-full flex items-center justify-center">
         {STICKER_IMAGES.map((src, index) => {
           let position = (index - activeIndex + 3) % 3;
@@ -37,19 +37,19 @@ function StickerShowcase() {
 
           if (position === 0) { // Centro
             zIndex = 30;
-            scale = 1;
+            scale = 1.05; // Leve aumento na central
             rotate = 0;
             translateX = "0%";
             opacity = 1;
           } else if (position === 1) { // Direita
             zIndex = 10;
-            scale = 0.88;
+            scale = 0.92;
             rotate = 8;
             translateX = "28%";
             opacity = 0.7;
           } else { // Esquerda
             zIndex = 10;
-            scale = 0.88;
+            scale = 0.92;
             rotate = -8;
             translateX = "-28%";
             opacity = 0.7;
@@ -65,13 +65,13 @@ function StickerShowcase() {
                 opacity,
               }}
             >
-              <div className="relative w-[190px] h-[260px] sm:w-[240px] sm:h-[330px] md:w-[320px] md:h-[440px] rounded-[18px] md:rounded-[24px] overflow-hidden shadow-2xl animate-float bg-white">
+              <div className="relative w-[210px] h-[285px] sm:w-[260px] sm:h-[355px] md:w-[340px] md:h-[465px] rounded-[20px] md:rounded-[28px] overflow-hidden shadow-2xl animate-float bg-white">
                 <Image
                   src={src}
                   alt={`Figurinha ${index + 1}`}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 190px, 320px"
+                  sizes="(max-width: 768px) 210px, 340px"
                   priority
                 />
               </div>
@@ -86,9 +86,9 @@ function StickerShowcase() {
 export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col bg-background overflow-x-hidden selection:bg-primary selection:text-white">
-      <section className="container mx-auto px-4 py-6 md:py-12 flex flex-col items-center text-center max-w-full">
+      <section className="container mx-auto px-4 py-8 md:py-16 flex flex-col items-center text-center max-w-full">
         
-        <div className="w-full max-w-4xl mx-auto space-y-4 md:space-y-6 mb-2">
+        <div className="w-full max-w-4xl mx-auto space-y-4 md:space-y-8 mb-4 md:mb-8">
           <div className="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
             <Trophy className="w-3 h-3 md:w-4 h-4 text-primary" />
             <span className="text-primary font-bold text-[10px] md:text-xs tracking-widest uppercase">
@@ -96,7 +96,7 @@ export default function HomePage() {
             </span>
           </div>
           
-          <h1 className="font-headline text-[clamp(2.25rem,12vw,5.5rem)] text-primary leading-[0.85] drop-shadow-sm uppercase">
+          <h1 className="font-headline text-[clamp(2.5rem,13vw,6rem)] text-primary leading-[0.85] drop-shadow-sm uppercase">
             TRANSFORME SEU FILHO <br />
             EM UM <span className="text-white drop-shadow-[0_2px_0_rgba(24,58,158,1)]">CRAQUE REAL!</span>
           </h1>
@@ -104,15 +104,15 @@ export default function HomePage() {
 
         <StickerShowcase />
 
-        <div className="w-full max-w-2xl mx-auto space-y-4 md:space-y-8 mt-6 md:mt-10">
-          <p className="text-primary/90 text-base md:text-2xl font-medium leading-tight md:leading-relaxed px-2">
+        <div className="w-full max-w-3xl mx-auto space-y-6 md:space-y-10 mt-8 md:mt-12">
+          <p className="text-primary/90 text-[18px] md:text-2xl font-medium leading-relaxed md:leading-relaxed px-4">
             Responda algumas perguntas rápidas e crie uma figurinha exclusiva, com o nome, foto e estilo do seu pequeno craque.
           </p>
 
           <Link href="/quiz" className="block w-full">
             <Button 
               size="lg" 
-              className="w-full md:w-auto h-16 md:h-20 px-8 md:px-12 text-lg md:text-2xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-xl md:shadow-2xl shadow-primary/40 pulse-button"
+              className="w-full md:w-auto h-16 md:h-20 px-10 md:px-14 text-xl md:text-2xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-xl md:shadow-2xl shadow-primary/40 pulse-button"
             >
               CRIAR AGORA
             </Button>
