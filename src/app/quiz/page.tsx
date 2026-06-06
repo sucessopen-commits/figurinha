@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -412,7 +411,7 @@ export default function QuizPage() {
   const totalWithOrderBumps = pricing.total + orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-x-hidden max-w-full">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-x-hidden max-w-full quiz-page-container">
       
       {isFlying && flyImage && (
         <div className="fixed z-[999] pointer-events-none animate-fly-to-cart" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
@@ -448,16 +447,16 @@ export default function QuizPage() {
         {(step >= 8) && (
           <div className="flex justify-center mb-2 animate-in fade-in slide-in-from-top-4 duration-500 max-w-full">
             <div className={cn(
-              "flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border-2 border-primary/20 transition-all",
+              "flex items-center gap-2 bg-white px-5 py-2.5 rounded-full shadow-lg border-2 border-primary/20 transition-all min-w-fit w-auto max-w-[calc(100vw-32px)] box-border",
               showFlySuccess && "scale-110 border-accent bg-accent/5"
             )}>
-              <div className="relative">
+              <div className="relative shrink-0">
                 <ShoppingCart className={cn("w-5 h-5 text-primary", showFlySuccess && "text-accent animate-bounce")} />
                 <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                   {step === 9 || step === 11 ? extraStickers.length + 1 : totalQuantity}
                 </span>
               </div>
-              <span className="text-primary font-headline text-sm uppercase tracking-tight whitespace-nowrap">
+              <span className="text-primary font-headline text-sm uppercase tracking-tight whitespace-nowrap overflow-visible">
                 {step === 9 || step === 11 ? `FIGURINHA ${extraStickers.length + 1} de ${totalQuantity}` : `${totalQuantity} FIGURINHAS`}
               </span>
             </div>
@@ -528,17 +527,20 @@ export default function QuizPage() {
                     />
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="outline" className="h-12 sm:h-14 sm:w-1/3 rounded-full border-primary text-primary whitespace-normal" onClick={() => setStep(1)}>
-                    VOLTAR
-                  </Button>
+                <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 flex-1 text-lg font-bold bg-primary rounded-full whitespace-normal" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
                     disabled={formData.birthDate.length < 10 || !formData.email.includes("@")}
                     onClick={() => setStep(3)}
                   >
                     PRÓXIMO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
                   </Button>
+                  <button 
+                    className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
+                    onClick={() => setStep(1)}
+                  >
+                    VOLTAR
+                  </button>
                 </div>
               </div>
             )}
@@ -582,13 +584,20 @@ export default function QuizPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="outline" className="h-12 sm:h-14 sm:w-1/3 rounded-full border-primary text-primary whitespace-normal" onClick={() => setStep(2)}>
-                    VOLTAR
-                  </Button>
-                  <Button className="h-auto py-4 flex-1 text-lg font-bold bg-primary rounded-full whitespace-normal" disabled={!formData.club} onClick={() => setStep(4)}>
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
+                    disabled={!formData.club} 
+                    onClick={() => setStep(4)}
+                  >
                     PRÓXIMO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
                   </Button>
+                  <button 
+                    className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
+                    onClick={() => setStep(2)}
+                  >
+                    VOLTAR
+                  </button>
                 </div>
               </div>
             )}
@@ -631,17 +640,20 @@ export default function QuizPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="outline" className="h-12 sm:h-14 sm:w-1/3 rounded-full border-primary text-primary whitespace-normal" onClick={() => setStep(3)}>
-                    VOLTAR
-                  </Button>
+                <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 flex-1 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" 
                     disabled={!formData.photoDataUri}
                     onClick={() => setStep(5)}
                   >
                     ANALISAR <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
                   </Button>
+                  <button 
+                    className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
+                    onClick={() => setStep(3)}
+                  >
+                    VOLTAR
+                  </button>
                 </div>
               </div>
             )}
@@ -675,13 +687,16 @@ export default function QuizPage() {
                    <div className="flex justify-between gap-2"><span className="text-muted-foreground font-bold shrink-0">CLUBE</span><span className="text-primary font-bold break-all text-right">{formData.club}</span></div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   <Button className="w-full h-auto py-4 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" onClick={startGeneration}>
                     SIM, GERAR FIGURINHA ⚽
                   </Button>
-                  <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold whitespace-nowrap overflow-hidden text-ellipsis" onClick={() => setStep(4)}>
+                  <button 
+                    className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
+                    onClick={() => setStep(4)}
+                  >
                     ALTERAR
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
@@ -896,7 +911,7 @@ export default function QuizPage() {
                    </div>
                    {pricing.savings > 0 && (
                      <div className="flex justify-between text-[10px] sm:text-xs font-bold text-accent gap-2">
-                        <span className="shrink-0 uppercase">DESCONTO ({pricing.discountPercent}% OFF)</span>
+                        <span className="shrink-0 uppercase">DESCONTO PROGRESSIVO</span>
                         <span className="whitespace-nowrap">- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
                      </div>
                    )}
@@ -1129,13 +1144,12 @@ export default function QuizPage() {
               >
                 GERAR PIX
               </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full h-auto py-3 text-primary font-bold uppercase text-[10px] sm:text-xs whitespace-normal" 
+              <button 
+                className="w-full text-muted-foreground hover:text-primary font-bold uppercase text-[12px] sm:text-sm py-2 transition-colors text-center block"
                 onClick={() => setShowCheckoutModal(false)}
               >
                 VOLTAR
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>
@@ -1148,7 +1162,7 @@ export default function QuizPage() {
         }
         .animate-fly-to-cart { animation: fly-to-cart 0.8s ease-in-out forwards; }
         
-        /* Quiz specific responsive overrides */
+        /* Quiz page responsive constraints */
         .quiz-page-container {
           max-width: 100vw;
           overflow-x: hidden;
