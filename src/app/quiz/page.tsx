@@ -23,7 +23,8 @@ import {
   ShoppingCart,
   Plus,
   CalendarDays,
-  X
+  X,
+  Trophy
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -60,24 +61,23 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 const BASE_PRICE_PER_UNIT = 12.90;
 
 const getPricingInfo = (qty: number) => {
-  let total = BASE_PRICE_PER_UNIT;
+  const fullPrice = qty * BASE_PRICE_PER_UNIT;
+  let total = fullPrice;
   let savings = 0;
 
   if (qty === 1) {
     total = 12.90;
     savings = 0;
   } else if (qty === 2) {
-    total = 20.64;
-    savings = 5.16;
+    total = 20.64; // 20% OFF do total
+    savings = fullPrice - total;
   } else if (qty === 3) {
-    total = 23.22;
-    savings = 15.48;
+    total = 23.22; // 40% OFF do total
+    savings = fullPrice - total;
   } else if (qty === 4) {
-    total = 25.53;
-    savings = 26.07;
+    total = 25.53; // ~50.5% OFF
+    savings = fullPrice - total;
   }
-
-  const fullPrice = qty * BASE_PRICE_PER_UNIT;
 
   return {
     total,
@@ -102,7 +102,6 @@ export default function QuizPage() {
   
   const [totalQuantity, setTotalQuantity] = useState(1);
   const [extraStickers, setExtraStickers] = useState<StickerData[]>([]);
-  const [currentExtraIdx, setCurrentExtraIdx] = useState(0);
   
   const [isFlying, setIsFlying] = useState(false);
   const [flyImage, setFlyImage] = useState<string | null>(null);
@@ -145,22 +144,6 @@ export default function QuizPage() {
   useEffect(() => {
     setCheckoutData(prev => ({ ...prev, email: formData.email }));
   }, [formData.email]);
-
-  const calculateAge = (dateString: string) => {
-    if (!dateString || dateString.length < 10) return 0;
-    const parts = dateString.split('/');
-    if (parts.length < 3) return 0;
-    const [day, month, year] = parts.map(Number);
-    const birthDate = new Date(year, month - 1, day);
-    if (isNaN(birthDate.getTime())) return 0;
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   useEffect(() => {
     if (step === 5) {
@@ -337,8 +320,7 @@ export default function QuizPage() {
       checkoutStatus: "ready_for_payment"
     }, { merge: true });
 
-    // Aqui seguiria para o checkout real
-    alert("Redirecionando para pagamento...");
+    alert("Redirecionando para pagamento via PIX...");
   };
 
   const pricing = getPricingInfo(totalQuantity);
@@ -622,7 +604,7 @@ export default function QuizPage() {
             {step === 7 && (
               <div className="space-y-8 animate-in fade-in duration-500 text-center">
                 <div className="space-y-2">
-                  <h2 className="font-headline text-3xl text-primary uppercase">GERANDO SUA FIGURINHA</h2>
+                  <h2 className="font-headline text-3xl text-primary uppercase leading-tight">GERANDO SUA FIGURINHA</h2>
                   <p className="text-muted-foreground text-xs font-bold">Não saia dessa tela, leva até 2 minutos.</p>
                 </div>
 
@@ -634,26 +616,32 @@ export default function QuizPage() {
                   <p className="text-primary font-headline text-xl uppercase opacity-40 mt-4">ESPAÇO RESERVADO PARA VSL</p>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-headline text-2xl text-primary uppercase leading-none tracking-tight">
+                <div className="space-y-6">
+                  <h3 className="font-headline text-3xl text-primary uppercase leading-none tracking-tight">
                     ALÉM DA FIGURINHA, VOCÊ TAMBÉM CONCORRE A:
                   </h3>
                   
                   <div className="space-y-3">
                     <div className="bg-white border-2 border-primary/10 p-5 rounded-[24px] shadow-sm flex items-center gap-4 text-left">
                         <Shirt className="w-6 h-6 text-primary shrink-0" />
-                        <p className="text-primary font-bold text-sm leading-tight uppercase">🎽 1 CAMISA ORIGINAL AUTOGRAFADA</p>
+                        <div>
+                          <p className="text-primary font-bold text-sm leading-tight uppercase">1 CAMISA ORIGINAL AUTOGRAFADA</p>
+                          <p className="text-primary/60 text-[10px] uppercase font-bold">POR JOGADORES DO BRASIL</p>
+                        </div>
                     </div>
                     <div className="font-headline text-xl text-primary/30 uppercase">OU</div>
                     <div className="bg-accent/10 border-2 border-accent/30 p-5 rounded-[24px] shadow-md flex items-center gap-4 text-left">
                         <DollarSign className="w-6 h-6 text-accent shrink-0" />
-                        <p className="text-accent font-black text-xl leading-none uppercase tracking-tighter">💸 R$1.000 NO PIX</p>
+                        <p className="text-accent font-black text-2xl leading-none uppercase tracking-tighter">💸 R$1.000 NO PIX</p>
                     </div>
                   </div>
 
-                  <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-center justify-center gap-3">
-                    <CalendarDays className="w-5 h-5 text-primary" />
-                    <p className="text-primary font-bold text-xs uppercase">Sorteio em 11/06/2026 às 15:00 horas</p>
+                  <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col items-center justify-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4 text-primary" />
+                      <p className="text-primary font-bold text-xs uppercase">Sorteio em 11/06/2026 às 15:00 horas</p>
+                    </div>
+                    <p className="text-primary/60 text-[9px] uppercase font-bold">Seu número da sorte será enviado após a confirmação.</p>
                   </div>
                 </div>
 
@@ -678,15 +666,16 @@ export default function QuizPage() {
                   <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
                 </div>
 
-                <div className="relative w-full max-w-[320px] mx-auto overflow-hidden">
-                  <Image 
-                    src="https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png" 
-                    alt="Figurinha Preview" 
-                    width={320}
-                    height={427}
-                    className="w-full h-auto object-contain block mx-auto"
-                    priority
-                  />
+                <div className="relative w-full max-w-[320px] mx-auto">
+                  <div className="relative aspect-[3/4] w-full overflow-hidden shadow-2xl">
+                    <Image 
+                      src="https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png" 
+                      alt="Figurinha Preview" 
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-4 pt-4">
@@ -712,6 +701,7 @@ export default function QuizPage() {
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
                   <h2 className="font-headline text-3xl text-primary uppercase leading-tight">DADOS DO CRAQUE EXTRA</h2>
+                  <p className="text-muted-foreground text-xs font-bold uppercase">Figurinha {extraStickers.length + 2} de {totalQuantity}</p>
                 </div>
 
                 <div className="space-y-4">
@@ -756,7 +746,7 @@ export default function QuizPage() {
                       <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('camera', true)}><Camera className="w-3 h-3" /> Câmera</Button>
                     </div>
                     {currentExtraData.photoDataUri && (
-                      <div className="relative w-20 h-20 mx-auto rounded-xl overflow-hidden border-2 border-primary/20 mt-4 shadow-lg"><Image src={currentExtraData.photoDataUri} alt="Extra Preview" fill className="object-cover" /></div>
+                      <div className="relative w-24 h-24 mx-auto rounded-xl overflow-hidden border-2 border-primary/20 mt-4 shadow-lg"><Image src={currentExtraData.photoDataUri} alt="Extra Preview" fill className="object-cover" /></div>
                     )}
                   </div>
                 </div>
@@ -791,23 +781,34 @@ export default function QuizPage() {
               <div className="space-y-6 animate-in zoom-in-95 duration-300">
                 <div className="text-center space-y-2">
                   <h2 className="font-headline text-3xl text-primary uppercase">REVISE SEU PEDIDO</h2>
+                  <p className="text-muted-foreground text-xs font-bold uppercase">Confira os craques escalados</p>
                 </div>
 
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                   <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
                     <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative"><Image src={formData.photoDataUri} alt="Orig" fill className="object-cover" /></div>
-                    <div className="flex-1 min-w-0"><p className="text-primary font-bold text-sm truncate">{formData.childName}</p><p className="text-[10px] text-muted-foreground uppercase">Principal</p></div>
+                    <div className="flex-1 min-w-0"><p className="text-primary font-bold text-sm truncate">{formData.childName}</p><p className="text-[10px] text-muted-foreground uppercase">Figurinha Principal</p></div>
                   </div>
                   {extraStickers.map((sticker, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 bg-accent/5 rounded-2xl border border-accent/10">
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative"><Image src={sticker.photoDataUri} alt={`Extra ${i}`} fill className="object-cover" /></div>
-                      <div className="flex-1 min-w-0"><p className="text-accent font-bold text-sm truncate">{sticker.childName}</p><p className="text-[10px] text-muted-foreground uppercase">Extra {i+2}</p></div>
+                      <div className="flex-1 min-w-0"><p className="text-accent font-bold text-sm truncate">{sticker.childName}</p><p className="text-[10px] text-muted-foreground uppercase">Figurinha Extra {i+2}</p></div>
                     </div>
                   ))}
                 </div>
 
                 <div className="bg-primary/5 p-4 rounded-2xl space-y-2 border-2 border-primary/10">
-                   <div className="flex justify-between text-xl pt-2 mt-2">
+                   <div className="flex justify-between text-xs font-bold text-primary/60">
+                      <span>VALOR TOTAL (VALOR CHEIO)</span>
+                      <span className="line-through">R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
+                   </div>
+                   {pricing.savings > 0 && (
+                     <div className="flex justify-between text-xs font-bold text-accent">
+                        <span>DESCONTO PROGRESSIVO ({pricing.discountPercent}% OFF)</span>
+                        <span>- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
+                     </div>
+                   )}
+                   <div className="flex justify-between text-xl pt-2 mt-2 border-t border-primary/10">
                       <span className="text-primary font-headline uppercase">TOTAL:</span>
                       <span className="text-primary font-headline">R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
                    </div>
@@ -841,30 +842,68 @@ export default function QuizPage() {
       {/* Upsell Modal */}
       <Dialog open={showUpsellModal} onOpenChange={setShowUpsellModal}>
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl">
-          <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">CRIAR MAIS FIGURINHAS?</DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">Quanto mais figurinhas, maior a economia. Adicione mais figurinhas e desbloqueie descontos progressivos.</DialogDescription>
+          <DialogTitle className="font-headline text-3xl text-primary uppercase text-center leading-tight">CRIAR MAIS FIGURINHAS?</DialogTitle>
+          <DialogDescription className="text-center text-muted-foreground font-medium">Quanto mais figurinhas, maior a economia. Adicione mais craques e desbloqueie descontos progressivos no pacote.</DialogDescription>
+          
           <div className="space-y-3 py-4">
              {[1, 2, 3, 4].map((qty) => {
                const info = getPricingInfo(qty);
                const isSelected = totalQuantity === qty;
                return (
-                 <div key={qty} className={cn("p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between", isSelected ? 'border-primary bg-primary/5' : 'border-primary/10')} onClick={() => setTotalQuantity(qty)}>
+                 <div 
+                   key={qty} 
+                   className={cn(
+                     "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between", 
+                     isSelected ? 'border-primary bg-primary/5' : 'border-primary/10 hover:border-primary/30'
+                   )} 
+                   onClick={() => setTotalQuantity(qty)}
+                 >
                    <div className="flex items-center gap-3">
-                      <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center", isSelected ? 'border-primary bg-primary' : 'border-primary/20')}>{isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}</div>
-                      <div><p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p></div>
+                      <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center", isSelected ? 'border-primary bg-primary' : 'border-primary/20')}>
+                        {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                      </div>
+                      <div>
+                        <p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
+                        {qty > 1 && <p className="text-accent text-[10px] font-black uppercase mt-1">{qty === 4 ? 'MAIOR ECONOMIA' : `${info.discountPercent}% OFF NO TOTAL`}</p>}
+                        {qty === 1 && <p className="text-muted-foreground text-[10px] font-bold uppercase mt-1">Pedido atual</p>}
+                      </div>
                    </div>
-                   <div className="text-right"><p className="text-primary font-headline text-xl leading-none">R$ {info.total.toFixed(2).replace('.', ',')}</p></div>
+                   <div className="text-right">
+                      {qty > 1 && <p className="text-muted-foreground line-through text-[10px] font-bold">R$ {info.fullPrice.toFixed(2).replace('.', ',')}</p>}
+                      <p className="text-primary font-headline text-xl leading-none">R$ {info.total.toFixed(2).replace('.', ',')}</p>
+                   </div>
                  </div>
                );
              })}
           </div>
-          <Button className="w-full h-16 text-xl font-bold bg-primary rounded-full" onClick={() => { setShowUpsellModal(false); if (totalQuantity > 1) { setExtraStickers([]); setCurrentExtraIdx(0); setStep(9); } }}>CONTINUAR</Button>
+
+          <div className="bg-accent/10 p-4 rounded-2xl mb-4 text-center">
+             <p className="text-accent font-bold text-sm">
+                🛒 {totalQuantity} {totalQuantity === 1 ? 'figurinha' : 'figurinhas'} no carrinho
+             </p>
+             {pricing.savings > 0 && (
+               <p className="text-accent font-headline text-lg uppercase">Economia de R$ {pricing.savings.toFixed(2).replace('.', ',')}</p>
+             )}
+          </div>
+
+          <Button 
+            className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg" 
+            onClick={() => { 
+              setShowUpsellModal(false); 
+              if (totalQuantity > 1) { 
+                setExtraStickers([]); 
+                setStep(9); 
+              } 
+            }}
+          >
+            CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}
+          </Button>
         </DialogContent>
       </Dialog>
 
       {/* Checkout Modal */}
       <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
-        <DialogContent className="max-w-[92%] sm:max-w-[540px] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogContent className="max-w-[92%] sm:max-w-[540px] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
           <div className="p-6 bg-primary text-white flex justify-between items-center shrink-0">
             <div>
               <DialogTitle className="font-headline text-3xl uppercase leading-none">FINALIZAR PEDIDO</DialogTitle>
@@ -873,13 +912,14 @@ export default function QuizPage() {
             <DialogClose className="p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></DialogClose>
           </div>
           
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-6">
+          <ScrollArea className="flex-1">
+            <div className="p-6 space-y-8">
               <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit">
                 <ShoppingCart className="w-4 h-4 text-primary" />
                 <span className="text-primary font-bold text-xs uppercase tracking-widest">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
               </div>
 
+              {/* Formulário do Comprador */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-primary font-bold">NOME COMPLETO</Label>
@@ -911,6 +951,7 @@ export default function QuizPage() {
                 </div>
               </div>
 
+              {/* Order Bumps */}
               <div className="space-y-4">
                 <h3 className="font-headline text-xl text-primary uppercase">COMPLETE SEU PEDIDO</h3>
                 <div className="space-y-3">
@@ -923,7 +964,7 @@ export default function QuizPage() {
                       )}
                       onClick={() => setOrderBumps(orderBumps.map(b => b.id === bump.id ? { ...b, selected: !b.selected } : b))}
                     >
-                      <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6" />
+                      <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6 rounded-md" />
                       <div className="flex-1">
                         <p className="text-primary font-bold text-sm leading-tight">{bump.title}</p>
                         <p className="text-[10px] text-muted-foreground">{bump.description}</p>
@@ -934,36 +975,58 @@ export default function QuizPage() {
                 </div>
               </div>
 
-              <div className="bg-primary/5 p-4 rounded-2xl border-2 border-primary/10 space-y-2">
-                <h4 className="font-headline text-sm text-primary uppercase">RESUMO DO PEDIDO</h4>
-                <div className="flex justify-between text-xs font-bold text-primary/60">
-                  <span>FIGURINHA(S) ({totalQuantity}X)</span>
-                  <span>R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
-                </div>
-                {orderBumps.filter(b => b.selected).map(b => (
-                  <div key={b.id} className="flex justify-between text-xs font-bold text-primary/60">
-                    <span>{b.title.toUpperCase()}</span>
-                    <span>R$ {b.price.toFixed(2).replace('.', ',')}</span>
+              {/* Resumo Final do Pedido */}
+              <div className="bg-primary/5 p-6 rounded-3xl border-2 border-primary/10 space-y-4">
+                <h4 className="font-headline text-xl text-primary uppercase border-b border-primary/10 pb-2">RESUMO DO PEDIDO</h4>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-primary/70">
+                    <span>{totalQuantity}X FIGURINHAS PERSONALIZADAS</span>
+                    <span>R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
                   </div>
-                ))}
-                <div className="border-t border-primary/10 pt-2 flex justify-between items-end">
-                  <span className="font-headline text-lg text-primary">TOTAL</span>
-                  <span className="font-headline text-2xl text-primary">R$ {totalWithOrderBumps.toFixed(2).replace('.', ',')}</span>
+                  
+                  {pricing.savings > 0 && (
+                    <div className="flex justify-between text-xs font-bold text-accent">
+                      <span>DESCONTO PROGRESSIVO ({pricing.discountPercent}% OFF)</span>
+                      <span>- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )}
+
+                  {orderBumps.filter(b => b.selected).map(b => (
+                    <div key={b.id} className="flex justify-between text-xs font-bold text-primary/70">
+                      <span>{b.title.toUpperCase()}</span>
+                      <span>R$ {b.price.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  ))}
                 </div>
+
+                <div className="pt-2 flex justify-between items-end">
+                  <span className="font-headline text-xl text-primary">TOTAL FINAL</span>
+                  <div className="text-right">
+                    <span className="text-primary font-headline text-3xl">R$ {totalWithOrderBumps.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de Ação no Final do Scroll */}
+              <div className="space-y-3 pt-4 pb-8">
+                <Button 
+                  className="w-full h-20 text-2xl font-bold bg-primary rounded-full shadow-2xl pulse-button"
+                  onClick={handleFinishCheckout}
+                  disabled={!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")}
+                >
+                  GERAR PIX
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full text-primary font-bold uppercase text-xs" 
+                  onClick={() => setShowCheckoutModal(false)}
+                >
+                  VOLTAR
+                </Button>
               </div>
             </div>
           </ScrollArea>
-
-          <div className="p-6 bg-white border-t space-y-3 shrink-0">
-            <Button 
-              className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg pulse-button"
-              onClick={handleFinishCheckout}
-              disabled={!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")}
-            >
-              CONTINUAR PARA PAGAMENTO
-            </Button>
-            <Button variant="ghost" className="w-full text-primary font-bold uppercase text-xs" onClick={() => setShowCheckoutModal(false)}>VOLTAR</Button>
-          </div>
         </DialogContent>
       </Dialog>
 
