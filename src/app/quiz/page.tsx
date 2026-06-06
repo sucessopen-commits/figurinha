@@ -29,7 +29,7 @@ import {
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 type StickerData = {
@@ -912,9 +912,23 @@ export default function QuizPage() {
           
           {/* Corpo Rolável */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit">
-              <ShoppingCart className="w-4 h-4 text-primary" />
-              <span className="text-primary font-bold text-xs uppercase tracking-widest">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+            
+            {/* PRÉVIA VISUAL DO PRODUTO */}
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-primary font-bold text-[10px] uppercase tracking-widest opacity-60">Sua Figurinha</p>
+              <div className="relative w-[160px] aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border-4 border-primary/10">
+                <Image 
+                  src={result || formData.photoDataUri || "https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png"} 
+                  alt="Sua Figurinha" 
+                  fill 
+                  className="object-contain" 
+                  priority
+                />
+              </div>
+              <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit">
+                <ShoppingCart className="w-4 h-4 text-primary" />
+                <span className="text-primary font-bold text-xs uppercase tracking-widest">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+              </div>
             </div>
 
             {/* Formulário do Comprador */}
@@ -1037,4 +1051,3 @@ export default function QuizPage() {
     </div>
   );
 }
-
