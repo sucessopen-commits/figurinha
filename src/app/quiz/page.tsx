@@ -54,7 +54,7 @@ type OrderBump = {
   image: string;
 };
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 
 const BASE_PRICE_PER_UNIT = 12.90;
 
@@ -92,6 +92,7 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [photoLoadingProgress, setPhotoLoadingProgress] = useState(0);
+  const [extraLoadingProgress, setExtraLoadingProgress] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
@@ -191,6 +192,29 @@ export default function QuizPage() {
           if (prev >= 100) {
             clearInterval(timer);
             setStep(6);
+            return 100;
+          }
+          return prev + increment;
+        });
+      }, interval);
+
+      return () => clearInterval(timer);
+    }
+  }, [step]);
+
+  // Loading process for extra stickers (Step 11)
+  useEffect(() => {
+    if (step === 11) {
+      setExtraLoadingProgress(0);
+      const duration = 5000;
+      const interval = 50;
+      const increment = (interval / duration) * 100;
+
+      const timer = setInterval(() => {
+        setExtraLoadingProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(timer);
+            completeExtraSticker();
             return 100;
           }
           return prev + increment;
@@ -358,6 +382,32 @@ export default function QuizPage() {
     alert("Redirecionando para pagamento via PIX...");
   };
 
+  const handleAddExtraSticker = () => {
+    if (!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10) return;
+    setStep(11);
+  };
+
+  const completeExtraSticker = () => {
+    setFlyImage(currentExtraData.photoDataUri);
+    setIsFlying(true);
+    setShowFlySuccess(true);
+    
+    setTimeout(() => {
+      setIsFlying(false);
+      setFlyImage(null);
+      const updatedExtras = [...extraStickers, currentExtraData];
+      setExtraStickers(updatedExtras);
+      
+      if (updatedExtras.length < totalQuantity - 1) {
+        setCurrentExtraData({ childName: "", birthDate: "", weight: 30, height: 120, club: "", photoDataUri: "" });
+        setStep(9);
+        setTimeout(() => setShowFlySuccess(false), 2000);
+      } else {
+        setStep(10);
+      }
+    }, 800);
+  };
+
   const pricing = getPricingInfo(totalQuantity);
   const totalWithOrderBumps = pricing.total + orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
 
@@ -404,11 +454,11 @@ export default function QuizPage() {
               <div className="relative">
                 <ShoppingCart className={cn("w-5 h-5 text-primary", showFlySuccess && "text-accent animate-bounce")} />
                 <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {step === 9 ? extraStickers.length + 1 : totalQuantity}
+                  {step === 9 || step === 11 ? extraStickers.length + 1 : totalQuantity}
                 </span>
               </div>
               <span className="text-primary font-headline text-sm uppercase tracking-tight">
-                {step === 9 ? `FIGURINHA ${extraStickers.length + 1} de ${totalQuantity}` : `${totalQuantity} FIGURINHAS`}
+                {step === 9 || step === 11 ? `FIGURINHA ${extraStickers.length + 1} de ${totalQuantity}` : `${totalQuantity} FIGURINHAS`}
               </span>
             </div>
           </div>
@@ -788,26 +838,34 @@ export default function QuizPage() {
                 <Button 
                   className="w-full h-16 text-lg font-bold bg-primary rounded-full shadow-lg"
                   disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
-                  onClick={() => {
-                    setFlyImage(currentExtraData.photoDataUri);
-                    setIsFlying(true);
-                    setShowFlySuccess(true);
-                    setTimeout(() => {
-                      setIsFlying(false);
-                      setFlyImage(null);
-                      const updatedExtras = [...extraStickers, currentExtraData];
-                      setExtraStickers(updatedExtras);
-                      if (updatedExtras.length < totalQuantity - 1) {
-                        setCurrentExtraData({ childName: "", birthDate: "", weight: 30, height: 120, club: "", photoDataUri: "" });
-                        setTimeout(() => setShowFlySuccess(false), 2000);
-                      } else {
-                        setStep(10);
-                      }
-                    }, 800);
-                  }}
+                  onClick={handleAddExtraSticker}
                 >
                   <Plus className="mr-2 w-5 h-5" /> ADICIONAR AO CARRINHO
                 </Button>
+              </div>
+            )}
+
+            {step === 11 && (
+              <div className="space-y-8 py-8 animate-in fade-in duration-500 text-center">
+                <div className="space-y-2">
+                  <h2 className="font-headline text-3xl text-primary uppercase">GERANDO FIGURINHA</h2>
+                  <p className="text-muted-foreground text-xs font-bold uppercase">Estamos preparando essa figurinha para o carrinho.</p>
+                </div>
+                
+                <div className="relative w-[180px] h-[180px] mx-auto rounded-[24px] overflow-hidden border-4 border-primary/20 shadow-2xl bg-primary/5">
+                   {currentExtraData.photoDataUri && <Image src={currentExtraData.photoDataUri} alt="Generating Extra" fill className="object-cover" />}
+                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                     <Loader2 className="w-12 h-12 text-white animate-spin" />
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-primary font-bold text-sm italic">Finalizando os detalhes do craque...</p>
+                  <div className="space-y-1">
+                    <Progress value={extraLoadingProgress} className="h-3 bg-primary/10" />
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Gerando {Math.round(extraLoadingProgress)}%</p>
+                  </div>
+                </div>
               </div>
             )}
 
