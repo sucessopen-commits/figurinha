@@ -620,11 +620,11 @@ export default function QuizPage() {
                   </h3>
                   
                   <div className="space-y-3">
-                    <div className="bg-white border-2 border-primary/10 p-5 rounded-[24px] shadow-sm flex items-center gap-4 text-left">
+                    <div className="bg-yellow-100/50 border-2 border-yellow-400/30 p-5 rounded-[24px] shadow-md flex items-center gap-4 text-left">
                         <Shirt className="w-6 h-6 text-primary shrink-0" />
-                        <div>
-                          <p className="text-primary font-bold text-sm leading-tight uppercase">1 CAMISA ORIGINAL AUTOGRAFADA</p>
-                          <p className="text-primary/60 text-[10px] uppercase font-bold">POR JOGADORES DO BRASIL</p>
+                        <div className="flex flex-col">
+                          <p className="text-primary font-extrabold text-sm leading-tight uppercase">1 CAMISA ORIGINAL AUTOGRAFADA</p>
+                          <p className="text-primary font-extrabold text-sm leading-tight uppercase">POR JOGADORES DO BRASIL</p>
                         </div>
                     </div>
                     <div className="font-headline text-xl text-primary/30 uppercase">OU</div>
