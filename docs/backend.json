@@ -1,0 +1,30 @@
+
+{
+  "entities": {
+    "Checkout": {
+      "title": "Checkout",
+      "description": "Representa uma tentativa de checkout e detalhes do pedido.",
+      "type": "object",
+      "properties": {
+        "checkoutName": { "type": "string", "description": "Nome completo do comprador" },
+        "checkoutWhatsapp": { "type": "string", "description": "WhatsApp do comprador" },
+        "checkoutEmail": { "type": "string", "description": "E-mail do comprador" },
+        "cartQuantity": { "type": "number", "description": "Quantidade de figurinhas no carrinho" },
+        "selectedOrderBumps": { "type": "array", "items": { "type": "string" }, "description": "IDs dos order bumps selecionados" },
+        "cartTotal": { "type": "number", "description": "Valor total do pedido" },
+        "checkoutStartedAt": { "type": "string", "format": "date-time", "description": "Data de início do checkout" },
+        "checkoutStatus": { "type": "string", "enum": ["started", "ready_for_payment"], "description": "Status do checkout" }
+      },
+      "required": ["checkoutEmail", "cartQuantity", "cartTotal"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/checkouts/{checkoutId}": {
+      "schema": "Checkout",
+      "description": "Coleção de registros de checkout."
+    }
+  }
+}

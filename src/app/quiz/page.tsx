@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,10 +22,17 @@ import {
   Shirt,
   ShoppingCart,
   Plus,
-  CalendarDays
+  CalendarDays,
+  X
 } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { initializeFirebase } from "@/firebase";
+
+const { firestore } = initializeFirebase();
 
 type StickerData = {
   childName: string;
@@ -39,9 +47,16 @@ type QuizData = StickerData & {
   email: string;
 };
 
+type OrderBump = {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  selected: boolean;
+};
+
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
-// Constantes de Precificação Atualizadas
 const BASE_PRICE_PER_UNIT = 12.90;
 
 const getPricingInfo = (qty: number) => {
@@ -81,15 +96,14 @@ export default function QuizPage() {
   const [result, setResult] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [pendingUploadType, setPendingUploadType] = useState<'gallery' | 'camera' | null>(null);
   const [processingText, setProcessingText] = useState("Iniciando processamento...");
   
-  // Cart State
   const [totalQuantity, setTotalQuantity] = useState(1);
   const [extraStickers, setExtraStickers] = useState<StickerData[]>([]);
   const [currentExtraIdx, setCurrentExtraIdx] = useState(0);
   
-  // Animation State
   const [isFlying, setIsFlying] = useState(false);
   const [flyImage, setFlyImage] = useState<string | null>(null);
   const [showFlySuccess, setShowFlySuccess] = useState(false);
@@ -112,6 +126,25 @@ export default function QuizPage() {
     club: "",
     photoDataUri: "",
   });
+
+  // Checkout State
+  const [checkoutData, setCheckoutData] = useState({
+    name: "",
+    whatsapp: "",
+    email: formData.email
+  });
+
+  const [orderBumps, setOrderBumps] = useState<OrderBump[]>([
+    { id: "ob1", title: "Order bump 1", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
+    { id: "ob2", title: "Order bump 2", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
+    { id: "ob3", title: "Order bump 3", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
+    { id: "ob4", title: "Order bump 4", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
+    { id: "ob5", title: "Order bump 5", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
+  ]);
+
+  useEffect(() => {
+    setCheckoutData(prev => ({ ...prev, email: formData.email }));
+  }, [formData.email]);
 
   const calculateAge = (dateString: string) => {
     if (!dateString || dateString.length < 10) return 0;
@@ -229,6 +262,17 @@ export default function QuizPage() {
     }
   };
 
+  const formatWhatsapp = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/^(\d{2})(\d)/g, "($1) $2")
+        .replace(/(\d{5})(\d)/, "$1-$2")
+        .slice(0, 15);
+    }
+    return numbers.slice(0, 11);
+  };
+
   const startGeneration = async () => {
     setLoading(true);
     setStep(7);
@@ -261,63 +305,48 @@ export default function QuizPage() {
     }
   };
 
-  const handleContinueWithQuantity = (qty: number) => {
-    setTotalQuantity(qty);
-    setShowUpsellModal(false);
-    if (qty > 1) {
-      setExtraStickers([]);
-      setCurrentExtraIdx(0);
-      setCurrentExtraData({
-        childName: "",
-        birthDate: "",
-        weight: 30,
-        height: 120,
-        club: "",
-        photoDataUri: "",
-      });
-      setStep(9);
-    }
+  const handleOpenCheckout = () => {
+    setShowCheckoutModal(true);
+    const pricing = getPricingInfo(totalQuantity);
+    const checkoutId = `${Date.now()}-${formData.email.split('@')[0]}`;
+    
+    setDoc(doc(firestore, "checkouts", checkoutId), {
+      checkoutEmail: formData.email,
+      cartQuantity: totalQuantity,
+      cartTotal: pricing.total,
+      checkoutStartedAt: new Date().toISOString(),
+      checkoutStatus: "started"
+    });
   };
 
-  const handleNextExtra = () => {
-    // Start Animation
-    setFlyImage(currentExtraData.photoDataUri);
-    setIsFlying(true);
-    setShowFlySuccess(true);
+  const handleFinishCheckout = () => {
+    if (!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")) {
+      return;
+    }
+    
+    const pricing = getPricingInfo(totalQuantity);
+    const checkoutId = `${Date.now()}-${checkoutData.email.split('@')[0]}`;
+    
+    setDoc(doc(firestore, "checkouts", checkoutId), {
+      checkoutName: checkoutData.name,
+      checkoutWhatsapp: checkoutData.whatsapp,
+      checkoutEmail: checkoutData.email,
+      cartQuantity: totalQuantity,
+      selectedOrderBumps: orderBumps.filter(b => b.selected).map(b => b.id),
+      cartTotal: pricing.total + orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0),
+      checkoutStatus: "ready_for_payment"
+    }, { merge: true });
 
-    setTimeout(() => {
-      setIsFlying(false);
-      setFlyImage(null);
-      
-      const updatedExtras = [...extraStickers, currentExtraData];
-      setExtraStickers(updatedExtras);
-      
-      if (updatedExtras.length < totalQuantity - 1) {
-        setCurrentExtraIdx(updatedExtras.length);
-        setCurrentExtraData({
-          childName: "",
-          birthDate: "",
-          weight: 30,
-          height: 120,
-          club: "",
-          photoDataUri: "",
-        });
-        setTimeout(() => setShowFlySuccess(false), 2000);
-      } else {
-        setStep(10);
-      }
-    }, 800);
+    // Aqui seguiria para o checkout real
+    alert("Redirecionando para pagamento...");
   };
 
   const pricing = getPricingInfo(totalQuantity);
-
-  const officialStep = step >= 1 && step <= 4 ? step : 4;
-  const progressPercent = (officialStep / 4) * 100;
+  const totalWithOrderBumps = pricing.total + orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-hidden">
       
-      {/* Fly to Cart Animation Element */}
       {isFlying && flyImage && (
         <div className="fixed z-[999] pointer-events-none animate-fly-to-cart" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
           <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-2xl">
@@ -332,24 +361,23 @@ export default function QuizPage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center px-1">
               <span className="text-primary font-bold text-sm tracking-widest uppercase">
-                PASSO {officialStep} de 4
+                PASSO {step >= 1 && step <= 4 ? step : 4} de 4
               </span>
               <div className="flex gap-1">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
                     className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                      i <= officialStep ? "bg-primary" : "bg-primary/20"
+                      i <= (step >= 1 && step <= 4 ? step : 4) ? "bg-primary" : "bg-primary/20"
                     }`}
                   />
                 ))}
               </div>
             </div>
-            <Progress value={progressPercent} className="h-3 bg-primary/10" />
+            <Progress value={((step >= 1 && step <= 4 ? step : 4) / 4) * 100} className="h-3 bg-primary/10" />
           </div>
         )}
 
-        {/* Global Cart Indicator for Steps 8, 9, 10 */}
         {(step >= 8) && (
           <div className="flex justify-center mb-2 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className={cn(
@@ -359,7 +387,7 @@ export default function QuizPage() {
               <div className="relative">
                 <ShoppingCart className={cn("w-5 h-5 text-primary", showFlySuccess && "text-accent animate-bounce")} />
                 <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {step === 9 ? extraStickers.length + 1 : (step === 10 ? totalQuantity : 1)}
+                  {step === 9 ? extraStickers.length + 1 : totalQuantity}
                 </span>
               </div>
               <span className="text-primary font-headline text-sm uppercase tracking-tight">
@@ -503,37 +531,24 @@ export default function QuizPage() {
                 <div className="text-center space-y-2">
                   <h2 className="font-headline text-3xl text-primary uppercase leading-tight">ENVIE A FOTO DO CRAQUE</h2>
                   <p className="text-muted-foreground text-sm">Agora envie uma foto de rosto para criar a figurinha personalizada.</p>
-                  <p className="text-primary font-bold text-xs bg-primary/5 py-2 rounded-xl px-4 inline-block mt-2">
-                    Use uma foto clara, de frente e com o rosto bem visível.
-                  </p>
                 </div>
                 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div 
                       className="group cursor-pointer border-2 border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5 rounded-2xl p-6 transition-all text-center space-y-2"
                       onClick={() => handleOpenWarning('gallery')}
                     >
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
-                        <ImageIcon className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-primary font-bold text-sm uppercase">ESCOLHER ARQUIVO</p>
-                        <p className="text-[10px] text-muted-foreground">Galeria do celular ou computador</p>
-                      </div>
+                      <ImageIcon className="w-6 h-6 text-primary mx-auto" />
+                      <p className="text-primary font-bold text-[10px] uppercase">GALERIA</p>
                     </div>
 
                     <div 
                       className="group cursor-pointer border-2 border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5 rounded-2xl p-6 transition-all text-center space-y-2"
                       onClick={() => handleOpenWarning('camera')}
                     >
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
-                        <Camera className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-primary font-bold text-sm uppercase">TIRAR FOTO</p>
-                        <p className="text-[10px] text-muted-foreground">Usar câmera do celular</p>
-                      </div>
+                      <Camera className="w-6 h-6 text-primary mx-auto" />
+                      <p className="text-primary font-bold text-[10px] uppercase">CÂMERA</p>
                     </div>
                   </div>
 
@@ -543,7 +558,7 @@ export default function QuizPage() {
                         <Image src={formData.photoDataUri} alt="Preview" fill className="object-cover" />
                       </div>
                       <p className="text-accent font-bold text-xs text-center flex items-center justify-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> Foto enviada com sucesso
+                        <CheckCircle2 className="w-4 h-4" /> Foto enviada
                       </p>
                     </div>
                   )}
@@ -558,7 +573,7 @@ export default function QuizPage() {
                     disabled={!formData.photoDataUri}
                     onClick={() => setStep(5)}
                   >
-                    ANALISAR FOTO <ChevronRight className="ml-2 w-5 h-5" />
+                    ANALISAR <ChevronRight className="ml-2 w-5 h-5" />
                   </Button>
                 </div>
               </div>
@@ -567,72 +582,30 @@ export default function QuizPage() {
             {step === 5 && (
               <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
                 <h2 className="font-headline text-3xl text-primary uppercase">CARREGANDO FOTO</h2>
-                
-                <div className="relative w-[140px] h-[140px] mx-auto rounded-[24px] overflow-hidden bg-primary/5 border-2 border-primary/10 shadow-inner">
-                   {formData.photoDataUri ? (
-                     <Image src={formData.photoDataUri} alt="Analyzing" fill className="object-cover" />
-                   ) : (
-                     <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-primary/20 w-10 h-10" /></div>
-                   )}
+                <div className="relative w-[140px] h-[140px] mx-auto rounded-[24px] overflow-hidden bg-primary/5 border-2 border-primary/10">
+                   {formData.photoDataUri && <Image src={formData.photoDataUri} alt="Analyzing" fill className="object-cover" />}
                 </div>
-
                 <p className="text-primary font-bold text-lg italic">“Esse tem cara de jogador caro hein”</p>
-
-                <div className="space-y-2">
-                   <div className="flex justify-between items-end text-primary font-bold text-xs uppercase">
-                      <span>Carregando...</span>
-                      <span>{Math.round(photoLoadingProgress)}%</span>
-                   </div>
-                   <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-300" 
-                        style={{ width: `${photoLoadingProgress}%` }}
-                      />
-                   </div>
-                </div>
+                <Progress value={photoLoadingProgress} className="h-2 bg-primary/10" />
               </div>
             )}
 
             {step === 6 && (
               <div className="space-y-6 animate-in zoom-in-95 duration-300">
                 <div className="text-center space-y-2">
-                  <h2 className="font-headline text-3xl text-primary uppercase">CONFIRA A FOTO E OS DADOS</h2>
-                  <p className="text-muted-foreground text-sm">Veja se está tudo certo antes de gerar sua figurinha.</p>
+                  <h2 className="font-headline text-3xl text-primary uppercase">CONFIRA OS DADOS</h2>
                 </div>
 
                 <div className="relative w-[130px] h-[130px] mx-auto rounded-full overflow-hidden border-4 border-primary shadow-xl">
                    <Image src={formData.photoDataUri} alt="Confirm" fill className="object-cover" />
                 </div>
                 
-                <p className="text-center text-primary font-bold text-[10px] uppercase tracking-tighter bg-primary/5 py-1 rounded-full px-4 inline-block mx-auto w-fit">
-                  VERIFIQUE SE O ROSTO ESTÁ PRÓXIMO E BEM VISÍVEL
-                </p>
-
                 <div className="bg-muted/50 p-5 rounded-2xl space-y-3 text-xs border border-primary/5">
-                   <div className="flex justify-between border-b border-black/5 pb-2">
-                      <span className="text-muted-foreground font-bold">NOME</span>
-                      <span className="text-primary font-bold">{formData.childName}</span>
-                   </div>
-                   <div className="flex justify-between border-b border-black/5 pb-2">
-                      <span className="text-muted-foreground font-bold">NASCIMENTO / IDADE</span>
-                      <span className="text-primary font-bold">{formData.birthDate} ({calculateAge(formData.birthDate)} anos)</span>
-                   </div>
-                   <div className="flex justify-between border-b border-black/5 pb-2">
-                      <span className="text-muted-foreground font-bold">E-MAIL</span>
-                      <span className="text-primary font-bold">{formData.email}</span>
-                   </div>
-                   <div className="flex justify-between border-b border-black/5 pb-2">
-                      <span className="text-muted-foreground font-bold">PESO / ALT</span>
-                      <span className="text-primary font-bold">{formData.weight}kg / {formData.height}cm</span>
-                   </div>
-                   <div className="flex justify-between">
-                      <span className="text-muted-foreground font-bold">CLUBE</span>
-                      <span className="text-primary font-bold">{formData.club}</span>
-                   </div>
-                </div>
-
-                <div className="text-center">
-                   <p className="text-primary font-bold">Está tudo certo para continuar?</p>
+                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground font-bold">NOME</span><span className="text-primary font-bold">{formData.childName}</span></div>
+                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground font-bold">NASCIMENTO</span><span className="text-primary font-bold">{formData.birthDate}</span></div>
+                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground font-bold">E-MAIL</span><span className="text-primary font-bold">{formData.email}</span></div>
+                   <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground font-bold">PESO/ALT</span><span className="text-primary font-bold">{formData.weight}kg / {formData.height}cm</span></div>
+                   <div className="flex justify-between"><span className="text-muted-foreground font-bold">CLUBE</span><span className="text-primary font-bold">{formData.club}</span></div>
                 </div>
 
                 <div className="space-y-3">
@@ -640,7 +613,7 @@ export default function QuizPage() {
                     SIM, GERAR FIGURINHA ⚽
                   </Button>
                   <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => setStep(4)}>
-                    ALTERAR ALGUMA COISA
+                    ALTERAR
                   </Button>
                 </div>
               </div>
@@ -653,23 +626,12 @@ export default function QuizPage() {
                   <p className="text-muted-foreground text-xs font-bold">Não saia dessa tela, leva até 2 minutos.</p>
                 </div>
 
-                <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 flex flex-col items-center justify-center group">
+                <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 flex flex-col items-center justify-center">
                   <div className="absolute top-4 left-4 right-4 bg-primary/10 py-2 rounded-xl z-10">
-                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Assista enquanto fica pronto</p>
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest">ASSISTA ENQUANTO FICA PRONTO</p>
                   </div>
-                  
-                  <div className="absolute -right-6 top-1/4 w-24 h-32 rotate-12 opacity-40 grayscale blur-[1px] hidden md:block">
-                     <Image src="https://i.postimg.cc/d1PGPQDM/Chat-GPT-Image-5-de-jun-de-2026-03-22-48.png" alt="Exemplo" fill className="object-cover rounded-xl" />
-                  </div>
-
-                  <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform">
-                    <Play className="text-white fill-white w-6 h-6 ml-1" />
-                  </div>
-                  
-                  <div className="px-6 mt-4">
-                    <p className="text-primary font-headline text-xl uppercase opacity-40">Espaço Reservado para VSL</p>
-                    <p className="text-xs text-muted-foreground mt-2 italic">Apresentação exclusiva</p>
-                  </div>
+                  <Play className="text-white fill-white w-12 h-12" />
+                  <p className="text-primary font-headline text-xl uppercase opacity-40 mt-4">ESPAÇO RESERVADO PARA VSL</p>
                 </div>
 
                 <div className="space-y-4">
@@ -678,68 +640,33 @@ export default function QuizPage() {
                   </h3>
                   
                   <div className="space-y-3">
-                    <div className="bg-white border-2 border-primary/10 p-5 rounded-[24px] shadow-sm relative overflow-hidden group">
-                      <div className="flex items-center gap-4 text-left">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <Shirt className="w-6 h-6 text-primary" />
-                        </div>
-                        <p className="text-primary font-bold text-sm leading-tight uppercase">
-                          🎽 1 Camisa Original Autografada por Jogadores do Brasil
-                        </p>
-                      </div>
+                    <div className="bg-white border-2 border-primary/10 p-5 rounded-[24px] shadow-sm flex items-center gap-4 text-left">
+                        <Shirt className="w-6 h-6 text-primary shrink-0" />
+                        <p className="text-primary font-bold text-sm leading-tight uppercase">🎽 1 CAMISA ORIGINAL AUTOGRAFADA</p>
                     </div>
-
                     <div className="font-headline text-xl text-primary/30 uppercase">OU</div>
-
-                    <div className="bg-accent/10 border-2 border-accent/30 p-5 rounded-[24px] shadow-md shadow-accent/5">
-                      <div className="flex items-center gap-4 text-left">
-                        <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
-                          <DollarSign className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-accent font-black text-xl leading-none uppercase tracking-tighter">
-                            💸 R$1.000 NO PIX
-                          </p>
-                        </div>
-                      </div>
+                    <div className="bg-accent/10 border-2 border-accent/30 p-5 rounded-[24px] shadow-md flex items-center gap-4 text-left">
+                        <DollarSign className="w-6 h-6 text-accent shrink-0" />
+                        <p className="text-accent font-black text-xl leading-none uppercase tracking-tighter">💸 R$1.000 NO PIX</p>
                     </div>
                   </div>
 
                   <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex items-center justify-center gap-3">
                     <CalendarDays className="w-5 h-5 text-primary" />
-                    <p className="text-primary font-bold text-xs uppercase tracking-tight">
-                      Sorteio em 11/06/2026 às 15:00 horas
-                    </p>
+                    <p className="text-primary font-bold text-xs uppercase">Sorteio em 11/06/2026 às 15:00 horas</p>
                   </div>
-
-                  <p className="text-[11px] text-primary/60 font-bold uppercase tracking-tight">
-                    Após garantir sua figurinha, você participa automaticamente do sorteio.
-                  </p>
                 </div>
 
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-1">
-                    <p className="text-primary font-bold text-sm italic">{processingText}</p>
-                    <div className="flex justify-between items-end text-primary font-black text-[10px] uppercase">
-                      <span>Processando...</span>
-                      <span>{Math.round(loadingProgress)}%</span>
-                    </div>
-                    <Progress value={loadingProgress} className="h-2 bg-primary/10" />
-                  </div>
-
+                <div className="space-y-4">
+                  <p className="text-primary font-bold text-sm italic">{processingText}</p>
+                  <Progress value={loadingProgress} className="h-2 bg-primary/10" />
                   <Button 
-                    className="w-full h-16 md:h-20 text-xl md:text-2xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/30 pulse-button flex items-center justify-center leading-none px-4"
+                    className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button"
                     onClick={() => setStep(8)}
                     disabled={!result}
                   >
-                    <span>RECEBER FIGURINHA</span>
+                    RECEBER FIGURINHA
                   </Button>
-                </div>
-
-                <div className="text-center opacity-60">
-                   <p className="text-[10px] font-bold text-primary flex items-center justify-center gap-1 uppercase">
-                     <ShieldCheck className="w-3 h-3" /> Seus dados estão protegidos
-                   </p>
                 </div>
               </div>
             )}
@@ -747,8 +674,7 @@ export default function QuizPage() {
             {step === 8 && (
               <div className="space-y-6 animate-in zoom-in-95 duration-500 text-center">
                 <div className="text-center space-y-1">
-                  <span className="text-5xl">⚽</span>
-                  <h2 className="font-headline text-5xl text-primary uppercase leading-none mt-2">GOOLL!</h2>
+                  <h2 className="font-headline text-5xl text-primary uppercase leading-none">GOOLL!</h2>
                   <p className="text-muted-foreground font-bold">Sua figurinha está pronta!</p>
                 </div>
 
@@ -769,23 +695,13 @@ export default function QuizPage() {
                       <span className="text-accent font-bold text-xl mt-1">R$</span>
                       <span className="text-accent font-headline text-6xl leading-none">{pricing.total.toFixed(2).replace('.', ',')}</span>
                     </div>
-                    {pricing.savings > 0 && (
-                      <p className="text-accent text-xs font-black bg-accent/10 px-4 py-1 rounded-full mt-2 uppercase tracking-widest">
-                        VOCÊ ECONOMIZA R$ {pricing.savings.toFixed(2).replace('.', ',')}
-                      </p>
-                    )}
                   </div>
 
-                  <Button className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl shadow-primary/40 pulse-button flex flex-col items-center justify-center leading-none">
-                    <span>RECEBER MINHA FIGURINHA</span>
-                    <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Acesso imediato via e-mail</span>
+                  <Button className="w-full h-20 text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button" onClick={handleOpenCheckout}>
+                    RECEBER MINHA FIGURINHA
                   </Button>
                   
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-12 rounded-full border-primary text-primary font-bold" 
-                    onClick={() => setShowUpsellModal(true)}
-                  >
+                  <Button variant="outline" className="w-full h-12 rounded-full border-primary text-primary font-bold" onClick={() => setShowUpsellModal(true)}>
                     CRIAR OUTRA FIGURINHA
                   </Button>
                 </div>
@@ -796,7 +712,6 @@ export default function QuizPage() {
               <div className="space-y-6 animate-in slide-in-from-right duration-300">
                 <div className="text-center space-y-2">
                   <h2 className="font-headline text-3xl text-primary uppercase leading-tight">DADOS DO CRAQUE EXTRA</h2>
-                  <p className="text-muted-foreground text-sm">Preencha apenas as informações das novas figurinhas.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -830,55 +745,42 @@ export default function QuizPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-primary font-bold">PESO (KG)</Label>
-                      <Input
-                        type="number"
-                        className="h-12 border-2 rounded-xl"
-                        value={currentExtraData.weight}
-                        onChange={(e) => setCurrentExtraData({ ...currentExtraData, weight: parseInt(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-primary font-bold">ALTURA (CM)</Label>
-                      <Input
-                        type="number"
-                        className="h-12 border-2 rounded-xl"
-                        value={currentExtraData.height}
-                        onChange={(e) => setCurrentExtraData({ ...currentExtraData, height: parseInt(e.target.value) || 0 })}
-                      />
-                    </div>
+                    <div className="space-y-2"><Label className="text-primary font-bold">PESO (KG)</Label><Input type="number" className="h-12 border-2 rounded-xl" value={currentExtraData.weight} onChange={(e) => setCurrentExtraData({ ...currentExtraData, weight: parseInt(e.target.value) || 0 })} /></div>
+                    <div className="space-y-2"><Label className="text-primary font-bold">ALTURA (CM)</Label><Input type="number" className="h-12 border-2 rounded-xl" value={currentExtraData.height} onChange={(e) => setCurrentExtraData({ ...currentExtraData, height: parseInt(e.target.value) || 0 })} /></div>
                   </div>
 
                   <div className="space-y-3 pt-2">
                     <Label className="text-primary font-bold block text-center">FOTO DO CRAQUE</Label>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('gallery', true)}>
-                        <ImageIcon className="w-3 h-3" /> Galeria
-                      </Button>
-                      <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('camera', true)}>
-                        <Camera className="w-3 h-3" /> Câmera
-                      </Button>
+                      <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('gallery', true)}><ImageIcon className="w-3 h-3" /> Galeria</Button>
+                      <Button variant="outline" className="h-12 border-dashed border-2 rounded-xl text-[10px] font-bold uppercase gap-1" onClick={() => handleOpenWarning('camera', true)}><Camera className="w-3 h-3" /> Câmera</Button>
                     </div>
                     {currentExtraData.photoDataUri && (
-                      <div className="relative w-20 h-20 mx-auto rounded-xl overflow-hidden border-2 border-primary/20 mt-4 shadow-lg">
-                         <Image src={currentExtraData.photoDataUri} alt="Extra Preview" fill className="object-cover" />
-                      </div>
+                      <div className="relative w-20 h-20 mx-auto rounded-xl overflow-hidden border-2 border-primary/20 mt-4 shadow-lg"><Image src={currentExtraData.photoDataUri} alt="Extra Preview" fill className="object-cover" /></div>
                     )}
                   </div>
                 </div>
 
-                {showFlySuccess && (
-                  <div className="bg-accent/10 border-2 border-accent/20 p-3 rounded-xl flex items-center justify-center gap-2 animate-in zoom-in duration-300">
-                    <CheckCircle2 className="w-4 h-4 text-accent" />
-                    <span className="text-accent font-bold text-xs uppercase">Figurinha adicionada ao carrinho!</span>
-                  </div>
-                )}
-
                 <Button 
                   className="w-full h-16 text-lg font-bold bg-primary rounded-full shadow-lg"
                   disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
-                  onClick={handleNextExtra}
+                  onClick={() => {
+                    setFlyImage(currentExtraData.photoDataUri);
+                    setIsFlying(true);
+                    setShowFlySuccess(true);
+                    setTimeout(() => {
+                      setIsFlying(false);
+                      setFlyImage(null);
+                      const updatedExtras = [...extraStickers, currentExtraData];
+                      setExtraStickers(updatedExtras);
+                      if (updatedExtras.length < totalQuantity - 1) {
+                        setCurrentExtraData({ childName: "", birthDate: "", weight: 30, height: 120, club: "", photoDataUri: "" });
+                        setTimeout(() => setShowFlySuccess(false), 2000);
+                      } else {
+                        setStep(10);
+                      }
+                    }, 800);
+                  }}
                 >
                   <Plus className="mr-2 w-5 h-5" /> ADICIONAR AO CARRINHO
                 </Button>
@@ -889,104 +791,49 @@ export default function QuizPage() {
               <div className="space-y-6 animate-in zoom-in-95 duration-300">
                 <div className="text-center space-y-2">
                   <h2 className="font-headline text-3xl text-primary uppercase">REVISE SEU PEDIDO</h2>
-                  <p className="text-muted-foreground text-sm">Confirme as figurinhas do seu carrinho.</p>
                 </div>
 
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                   <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative">
-                       <Image src={formData.photoDataUri} alt="Orig" fill className="object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-primary font-bold text-sm truncate">{formData.childName}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase">Figurinha Principal</p>
-                    </div>
-                    <span className="text-primary font-bold text-sm">R$ {BASE_PRICE_PER_UNIT.toFixed(2).replace('.', ',')}</span>
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative"><Image src={formData.photoDataUri} alt="Orig" fill className="object-cover" /></div>
+                    <div className="flex-1 min-w-0"><p className="text-primary font-bold text-sm truncate">{formData.childName}</p><p className="text-[10px] text-muted-foreground uppercase">Principal</p></div>
                   </div>
-
                   {extraStickers.map((sticker, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 bg-accent/5 rounded-2xl border border-accent/10">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative">
-                         <Image src={sticker.photoDataUri} alt={`Extra ${i}`} fill className="object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-accent font-bold text-sm truncate">{sticker.childName}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase">Figurinha Extra {i+2}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-accent font-bold text-sm">R$ {BASE_PRICE_PER_UNIT.toFixed(2).replace('.', ',')}</p>
-                      </div>
+                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 relative"><Image src={sticker.photoDataUri} alt={`Extra ${i}`} fill className="object-cover" /></div>
+                      <div className="flex-1 min-w-0"><p className="text-accent font-bold text-sm truncate">{sticker.childName}</p><p className="text-[10px] text-muted-foreground uppercase">Extra {i+2}</p></div>
                     </div>
                   ))}
                 </div>
 
                 <div className="bg-primary/5 p-4 rounded-2xl space-y-2 border-2 border-primary/10">
-                   <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal ({totalQuantity}x):</span>
-                      <span className="text-muted-foreground line-through">R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
-                   </div>
-                   {pricing.savings > 0 && (
-                     <div className="flex justify-between text-sm">
-                        <span className="text-accent font-bold">Economia do Pacote:</span>
-                        <span className="text-accent font-bold">- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
-                     </div>
-                   )}
-                   <div className="flex justify-between text-xl border-t border-primary/10 pt-2 mt-2">
+                   <div className="flex justify-between text-xl pt-2 mt-2">
                       <span className="text-primary font-headline uppercase">TOTAL:</span>
                       <span className="text-primary font-headline">R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
                    </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Button className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg pulse-button">
-                    FINALIZAR PEDIDO <ChevronRight className="ml-2 w-6 h-6" />
-                  </Button>
-                  <Button variant="ghost" className="w-full h-10 text-primary font-bold text-sm uppercase" onClick={() => setStep(8)}>
-                    VOLTAR PARA A FIGURINHA
-                  </Button>
-                </div>
+                <Button className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg pulse-button" onClick={handleOpenCheckout}>
+                  FINALIZAR PEDIDO <ChevronRight className="ml-2 w-6 h-6" />
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <p className="text-primary font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 opacity-60 uppercase tracking-widest">
-            <ShieldCheck className="w-4 h-4" /> SEUS DADOS ESTÃO PROTEGIDOS
-          </p>
-        </div>
       </div>
 
       {/* Warning Modal */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
-        <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl animate-in zoom-in-95 duration-300">
+        <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl">
           <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">AVISO</DialogTitle>
-          <DialogDescription className="sr-only">
-            Aviso sobre as diretrizes da foto para a figurinha.
-          </DialogDescription>
           <div className="space-y-6 text-center">
             <div className="bg-primary px-4 py-6 rounded-[24px] flex flex-col items-center">
-              <div className="relative w-full aspect-[4/5] max-w-[240px] rounded-[16px] overflow-hidden shadow-xl border-4 border-white/10">
-                <Image 
-                  src="https://i.postimg.cc/4NQDR03g/Chat-GPT-Image-5-de-jun-de-2026-18-07-41.png" 
-                  alt="Exemplo de foto correta" 
-                  fill 
-                  className="object-cover"
-                  sizes="(max-width: 768px) 240px, 240px"
-                />
+              <div className="relative w-full aspect-[4/5] max-w-[240px] rounded-[16px] overflow-hidden border-4 border-white/10">
+                <Image src="https://i.postimg.cc/4NQDR03g/Chat-GPT-Image-5-de-jun-de-2026-18-07-41.png" alt="Exemplo" fill className="object-cover" />
               </div>
             </div>
-
-            <p className="text-primary font-bold text-lg leading-tight px-2">
-              A foto precisa ser somente da pessoa, sem outras pessoas no enquadramento.
-            </p>
-
-            <Button 
-              className="w-full h-14 text-xl font-bold bg-primary hover:bg-primary/90 rounded-full shadow-lg"
-              onClick={confirmWarning}
-            >
-              ENTENDI
-            </Button>
+            <p className="text-primary font-bold text-lg leading-tight">A foto precisa ser somente da pessoa, sem outras pessoas no enquadramento.</p>
+            <Button className="w-full h-14 text-xl font-bold bg-primary rounded-full shadow-lg" onClick={confirmWarning}>ENTENDI</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -995,83 +842,137 @@ export default function QuizPage() {
       <Dialog open={showUpsellModal} onOpenChange={setShowUpsellModal}>
         <DialogContent className="max-w-[92%] sm:max-w-[420px] rounded-[32px] p-6 border-none bg-white shadow-2xl">
           <DialogTitle className="font-headline text-3xl text-primary uppercase text-center">CRIAR MAIS FIGURINHAS?</DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground -mt-2">
-            Quanto mais figurinhas, maior a economia. Adicione mais figurinhas e desbloqueie descontos progressivos.
-          </DialogDescription>
-          
+          <DialogDescription className="text-center text-muted-foreground">Quanto mais figurinhas, maior a economia. Adicione mais figurinhas e desbloqueie descontos progressivos.</DialogDescription>
           <div className="space-y-3 py-4">
              {[1, 2, 3, 4].map((qty) => {
                const info = getPricingInfo(qty);
                const isSelected = totalQuantity === qty;
-
                return (
-                 <div 
-                   key={qty}
-                   className={cn(
-                     "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
-                     isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-primary/10 hover:border-primary/30'
-                   )}
-                   onClick={() => setTotalQuantity(qty)}
-                 >
+                 <div key={qty} className={cn("p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between", isSelected ? 'border-primary bg-primary/5' : 'border-primary/10')} onClick={() => setTotalQuantity(qty)}>
                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-6 h-6 rounded-full border-2 flex items-center justify-center",
-                        isSelected ? 'border-primary bg-primary' : 'border-primary/20'
-                      )}>
-                         {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
-                      </div>
-                      <div>
-                        <p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <p className="text-[10px] text-muted-foreground line-through font-bold">R$ {(qty * BASE_PRICE_PER_UNIT).toFixed(2).replace('.', ',')}</p>
-                          {qty === 4 && <span className="text-[9px] bg-accent text-white px-1.5 py-0.5 rounded font-black uppercase">MAIOR ECONOMIA</span>}
-                        </div>
-                      </div>
+                      <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center", isSelected ? 'border-primary bg-primary' : 'border-primary/20')}>{isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}</div>
+                      <div><p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p></div>
                    </div>
-                   <div className="text-right">
-                      <p className="text-primary font-headline text-xl leading-none">R$ {info.total.toFixed(2).replace('.', ',')}</p>
-                      {info.savings > 0 && (
-                        <p className="text-[9px] text-accent font-black uppercase mt-1">Economize R$ {info.savings.toFixed(2).replace('.', ',')}</p>
-                      )}
-                   </div>
+                   <div className="text-right"><p className="text-primary font-headline text-xl leading-none">R$ {info.total.toFixed(2).replace('.', ',')}</p></div>
                  </div>
                );
              })}
           </div>
+          <Button className="w-full h-16 text-xl font-bold bg-primary rounded-full" onClick={() => { setShowUpsellModal(false); if (totalQuantity > 1) { setExtraStickers([]); setCurrentExtraIdx(0); setStep(9); } }}>CONTINUAR</Button>
+        </DialogContent>
+      </Dialog>
 
-          <div className="space-y-3">
-             <Button 
-               className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg flex flex-col items-center justify-center leading-none"
-               onClick={() => handleContinueWithQuantity(totalQuantity)}
-             >
-                <span className="uppercase">CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}</span>
-                {totalQuantity > 1 && <span className="text-[10px] font-medium opacity-80 mt-1 uppercase tracking-widest">Total: R$ {pricing.total.toFixed(2).replace('.', ',')}</span>}
-             </Button>
-             <Button variant="ghost" className="w-full text-primary font-bold uppercase" onClick={() => setShowUpsellModal(false)}>
-                VOLTAR
-             </Button>
+      {/* Checkout Modal */}
+      <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
+        <DialogContent className="max-w-[92%] sm:max-w-[540px] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="p-6 bg-primary text-white flex justify-between items-center shrink-0">
+            <div>
+              <DialogTitle className="font-headline text-3xl uppercase leading-none">FINALIZAR PEDIDO</DialogTitle>
+              <p className="text-white/80 text-xs mt-1">Preencha seus dados para receber sua figurinha.</p>
+            </div>
+            <DialogClose className="p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></DialogClose>
+          </div>
+          
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit">
+                <ShoppingCart className="w-4 h-4 text-primary" />
+                <span className="text-primary font-bold text-xs uppercase tracking-widest">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-primary font-bold">NOME COMPLETO</Label>
+                  <Input 
+                    placeholder="Digite seu nome completo" 
+                    className="h-12 border-2 rounded-xl"
+                    value={checkoutData.name}
+                    onChange={(e) => setCheckoutData({ ...checkoutData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-primary font-bold">NÚMERO DE WHATSAPP</Label>
+                  <Input 
+                    placeholder="(00) 00000-0000" 
+                    className="h-12 border-2 rounded-xl"
+                    value={checkoutData.whatsapp}
+                    onChange={(e) => setCheckoutData({ ...checkoutData, whatsapp: formatWhatsapp(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-primary font-bold">E-MAIL</Label>
+                  <Input 
+                    type="email"
+                    placeholder="exemplo@email.com" 
+                    className="h-12 border-2 rounded-xl"
+                    value={checkoutData.email}
+                    onChange={(e) => setCheckoutData({ ...checkoutData, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-headline text-xl text-primary uppercase">COMPLETE SEU PEDIDO</h3>
+                <div className="space-y-3">
+                  {orderBumps.map((bump) => (
+                    <div 
+                      key={bump.id} 
+                      className={cn(
+                        "p-4 border-2 rounded-2xl flex items-center gap-4 transition-all cursor-pointer",
+                        bump.selected ? "border-primary bg-primary/5" : "border-primary/10 hover:border-primary/20"
+                      )}
+                      onClick={() => setOrderBumps(orderBumps.map(b => b.id === bump.id ? { ...b, selected: !b.selected } : b))}
+                    >
+                      <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6" />
+                      <div className="flex-1">
+                        <p className="text-primary font-bold text-sm leading-tight">{bump.title}</p>
+                        <p className="text-[10px] text-muted-foreground">{bump.description}</p>
+                      </div>
+                      <span className="text-primary font-headline text-lg">R$ {bump.price.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-2xl border-2 border-primary/10 space-y-2">
+                <h4 className="font-headline text-sm text-primary uppercase">RESUMO DO PEDIDO</h4>
+                <div className="flex justify-between text-xs font-bold text-primary/60">
+                  <span>FIGURINHA(S) ({totalQuantity}X)</span>
+                  <span>R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
+                </div>
+                {orderBumps.filter(b => b.selected).map(b => (
+                  <div key={b.id} className="flex justify-between text-xs font-bold text-primary/60">
+                    <span>{b.title.toUpperCase()}</span>
+                    <span>R$ {b.price.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ))}
+                <div className="border-t border-primary/10 pt-2 flex justify-between items-end">
+                  <span className="font-headline text-lg text-primary">TOTAL</span>
+                  <span className="font-headline text-2xl text-primary">R$ {totalWithOrderBumps.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <div className="p-6 bg-white border-t space-y-3 shrink-0">
+            <Button 
+              className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-lg pulse-button"
+              onClick={handleFinishCheckout}
+              disabled={!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")}
+            >
+              CONTINUAR PARA PAGAMENTO
+            </Button>
+            <Button variant="ghost" className="w-full text-primary font-bold uppercase text-xs" onClick={() => setShowCheckoutModal(false)}>VOLTAR</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <style jsx global>{`
         @keyframes fly-to-cart {
-          0% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: translate(-50%, -150%) scale(0.6);
-            opacity: 0.8;
-          }
-          100% {
-            transform: translate(0, -300%) scale(0.2);
-            opacity: 0;
-          }
+          0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          100% { transform: translate(150px, -400px) scale(0.2); opacity: 0; }
         }
-        .animate-fly-to-cart {
-          animation: fly-to-cart 0.8s ease-in-out forwards;
-        }
+        .animate-fly-to-cart { animation: fly-to-cart 0.8s ease-in-out forwards; }
       `}</style>
     </div>
   );
