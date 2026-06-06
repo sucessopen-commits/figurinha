@@ -51,6 +51,7 @@ type OrderBump = {
   description: string;
   price: number;
   selected: boolean;
+  image: string;
 };
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
@@ -132,11 +133,46 @@ export default function QuizPage() {
   });
 
   const [orderBumps, setOrderBumps] = useState<OrderBump[]>([
-    { id: "ob1", title: "Order bump 1", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
-    { id: "ob2", title: "Order bump 2", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
-    { id: "ob3", title: "Order bump 3", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
-    { id: "ob4", title: "Order bump 4", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
-    { id: "ob5", title: "Order bump 5", description: "Descrição do adicional será configurada depois.", price: 0, selected: false },
+    { 
+      id: "ob1", 
+      title: "Receber via WhatsApp", 
+      description: "Receba suas compras e acessos pelo seu WhatsApp.", 
+      price: 3.50, 
+      selected: false,
+      image: "https://i.postimg.cc/wTPyFS8C/image.png"
+    },
+    { 
+      id: "ob2", 
+      title: "Pacote de figurinha para impressão", 
+      description: "Deixe a experiência ainda mais incrível e realista entregando a figurinha dentro de um pacotinho.", 
+      price: 4.00, 
+      selected: false,
+      image: "https://i.postimg.cc/5yDg3NpR/Captura-de-tela-2026-06-06-093343.png"
+    },
+    { 
+      id: "ob3", 
+      title: "Arquivo com TODAS figurinhas da COPA 2026", 
+      description: "Cansada de gastar quase 10 reais por pacotinho? Aqui te entregamos TODO o álbum pelo preço de 1 pacotinho.", 
+      price: 9.00, 
+      selected: false,
+      image: "https://i.postimg.cc/rshsXK7z/orderbump-todas-fig.png"
+    },
+    { 
+      id: "ob4", 
+      title: "Figurinha do Neymar", 
+      description: "Imagina a emoção do pequeno ao abrir o mesmo pacotinho que vem a figurinha dele e do Neymar JUNTOS.", 
+      price: 5.00, 
+      selected: false,
+      image: "https://i.postimg.cc/x8djR9qz/d-ZHVBFGDOL9ehq-EGt-Eh5CUM0hs0Llz-TQPGo-MSx-Z3.png"
+    },
+    { 
+      id: "ob5", 
+      title: "Aumente suas chances em 10x", 
+      description: "Aumente suas chances no sorteio dia 11/06/2026 às 15:00.", 
+      price: 7.00, 
+      selected: false,
+      image: "https://i.postimg.cc/SsgkjHVx/Vb-Pk-M6xq-JKHrb-BJT9L3pre-Q1a-UR6Kw5mc1d-MQZo6.png"
+    },
   ]);
 
   useEffect(() => {
@@ -306,6 +342,7 @@ export default function QuizPage() {
     }
     
     const pricing = getPricingInfo(totalQuantity);
+    const orderBumpsTotal = orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
     const checkoutId = `${Date.now()}-${checkoutData.email.split('@')[0]}`;
     
     setDoc(doc(firestore, "checkouts", checkoutId), {
@@ -314,7 +351,7 @@ export default function QuizPage() {
       checkoutEmail: checkoutData.email,
       cartQuantity: totalQuantity,
       selectedOrderBumps: orderBumps.filter(b => b.selected).map(b => b.id),
-      cartTotal: pricing.total + orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0),
+      cartTotal: pricing.total + orderBumpsTotal,
       checkoutStatus: "ready_for_payment"
     }, { merge: true });
 
@@ -976,12 +1013,15 @@ export default function QuizPage() {
                     )}
                     onClick={() => setOrderBumps(orderBumps.map(b => b.id === bump.id ? { ...b, selected: !b.selected } : b))}
                   >
-                    <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6 rounded-md" />
-                    <div className="flex-1">
-                      <p className="text-primary font-bold text-sm leading-tight">{bump.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{bump.description}</p>
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-primary/10">
+                      <Image src={bump.image} alt={bump.title} fill className="object-cover" />
                     </div>
-                    <span className="text-primary font-headline text-lg">R$ {bump.price.toFixed(2).replace('.', ',')}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-primary font-bold text-sm leading-tight truncate">{bump.title}</p>
+                      <p className="text-[10px] text-muted-foreground line-clamp-2">{bump.description}</p>
+                      <p className="text-primary font-headline text-lg mt-1">R$ {bump.price.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                    <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6 rounded-md" />
                   </div>
                 ))}
               </div>
