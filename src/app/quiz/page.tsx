@@ -29,11 +29,8 @@ import {
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { initializeFirebase } from "@/firebase";
-
-const { firestore } = initializeFirebase();
+import { useFirestore } from "@/firebase";
 
 type StickerData = {
   childName: string;
@@ -89,6 +86,7 @@ const getPricingInfo = (qty: number) => {
 
 export default function QuizPage() {
   const router = useRouter();
+  const firestore = useFirestore();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -639,7 +637,7 @@ export default function QuizPage() {
                   <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col items-center justify-center gap-1">
                     <div className="flex items-center gap-2">
                       <CalendarDays className="w-4 h-4 text-primary" />
-                      <p className="text-primary font-bold text-xs uppercase">Sorteio em 11/06/2026 às 15:00 horas</p>
+                      <p className="text-primary font-bold text-xs uppercase">O sorteio será realizado no dia 11/06/2026 às 15:00 horas.</p>
                     </div>
                     <p className="text-primary/60 text-[9px] uppercase font-bold">Seu número da sorte será enviado após a confirmação.</p>
                   </div>
@@ -651,7 +649,6 @@ export default function QuizPage() {
                   <Button 
                     className="w-full h-16 text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button"
                     onClick={() => setStep(8)}
-                    disabled={!result}
                   >
                     RECEBER FIGURINHA
                   </Button>
@@ -864,7 +861,7 @@ export default function QuizPage() {
                       </div>
                       <div>
                         <p className="text-primary font-bold leading-none">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
-                        {qty > 1 && <p className="text-accent text-[10px] font-black uppercase mt-1">{qty === 4 ? 'MAIOR ECONOMIA' : `${info.discountPercent}% OFF NO TOTAL`}</p>}
+                        {qty > 1 && <p className="text-accent text-[10px] font-black uppercase mt-1">{qty === 4 ? 'MAIOR ECONOMIA' : `PACOTE COM DESCONTO`}</p>}
                         {qty === 1 && <p className="text-muted-foreground text-[10px] font-bold uppercase mt-1">Pedido atual</p>}
                       </div>
                    </div>
@@ -903,7 +900,8 @@ export default function QuizPage() {
 
       {/* Checkout Modal */}
       <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
-        <DialogContent className="max-w-[92%] sm:max-w-[540px] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <DialogContent className="max-w-[95%] sm:max-w-[540px] rounded-[32px] p-0 border-none bg-white shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
+          {/* Header Fixo */}
           <div className="p-6 bg-primary text-white flex justify-between items-center shrink-0">
             <div>
               <DialogTitle className="font-headline text-3xl uppercase leading-none">FINALIZAR PEDIDO</DialogTitle>
@@ -912,121 +910,120 @@ export default function QuizPage() {
             <DialogClose className="p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></DialogClose>
           </div>
           
-          <ScrollArea className="flex-1">
-            <div className="p-6 space-y-8">
-              <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit">
-                <ShoppingCart className="w-4 h-4 text-primary" />
-                <span className="text-primary font-bold text-xs uppercase tracking-widest">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+          {/* Corpo Rolável */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit">
+              <ShoppingCart className="w-4 h-4 text-primary" />
+              <span className="text-primary font-bold text-xs uppercase tracking-widest">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+            </div>
+
+            {/* Formulário do Comprador */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-primary font-bold">NOME COMPLETO</Label>
+                <input 
+                  placeholder="Digite seu nome completo" 
+                  className="w-full h-12 border-2 rounded-xl px-4 focus:outline-none focus:border-primary transition-colors"
+                  value={checkoutData.name}
+                  onChange={(e) => setCheckoutData({ ...checkoutData, name: e.target.value })}
+                />
               </div>
-
-              {/* Formulário do Comprador */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-primary font-bold">NOME COMPLETO</Label>
-                  <Input 
-                    placeholder="Digite seu nome completo" 
-                    className="h-12 border-2 rounded-xl"
-                    value={checkoutData.name}
-                    onChange={(e) => setCheckoutData({ ...checkoutData, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-primary font-bold">NÚMERO DE WHATSAPP</Label>
-                  <Input 
-                    placeholder="(00) 00000-0000" 
-                    className="h-12 border-2 rounded-xl"
-                    value={checkoutData.whatsapp}
-                    onChange={(e) => setCheckoutData({ ...checkoutData, whatsapp: formatWhatsapp(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-primary font-bold">E-MAIL</Label>
-                  <Input 
-                    type="email"
-                    placeholder="exemplo@email.com" 
-                    className="h-12 border-2 rounded-xl"
-                    value={checkoutData.email}
-                    onChange={(e) => setCheckoutData({ ...checkoutData, email: e.target.value })}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-primary font-bold">NÚMERO DE WHATSAPP</Label>
+                <input 
+                  placeholder="(00) 00000-0000" 
+                  className="w-full h-12 border-2 rounded-xl px-4 focus:outline-none focus:border-primary transition-colors"
+                  value={checkoutData.whatsapp}
+                  onChange={(e) => setCheckoutData({ ...checkoutData, whatsapp: formatWhatsapp(e.target.value) })}
+                />
               </div>
-
-              {/* Order Bumps */}
-              <div className="space-y-4">
-                <h3 className="font-headline text-xl text-primary uppercase">COMPLETE SEU PEDIDO</h3>
-                <div className="space-y-3">
-                  {orderBumps.map((bump) => (
-                    <div 
-                      key={bump.id} 
-                      className={cn(
-                        "p-4 border-2 rounded-2xl flex items-center gap-4 transition-all cursor-pointer",
-                        bump.selected ? "border-primary bg-primary/5" : "border-primary/10 hover:border-primary/20"
-                      )}
-                      onClick={() => setOrderBumps(orderBumps.map(b => b.id === bump.id ? { ...b, selected: !b.selected } : b))}
-                    >
-                      <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6 rounded-md" />
-                      <div className="flex-1">
-                        <p className="text-primary font-bold text-sm leading-tight">{bump.title}</p>
-                        <p className="text-[10px] text-muted-foreground">{bump.description}</p>
-                      </div>
-                      <span className="text-primary font-headline text-lg">R$ {bump.price.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Resumo Final do Pedido */}
-              <div className="bg-primary/5 p-6 rounded-3xl border-2 border-primary/10 space-y-4">
-                <h4 className="font-headline text-xl text-primary uppercase border-b border-primary/10 pb-2">RESUMO DO PEDIDO</h4>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold text-primary/70">
-                    <span>{totalQuantity}X FIGURINHAS PERSONALIZADAS</span>
-                    <span>R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  
-                  {pricing.savings > 0 && (
-                    <div className="flex justify-between text-xs font-bold text-accent">
-                      <span>DESCONTO PROGRESSIVO ({pricing.discountPercent}% OFF)</span>
-                      <span>- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  )}
-
-                  {orderBumps.filter(b => b.selected).map(b => (
-                    <div key={b.id} className="flex justify-between text-xs font-bold text-primary/70">
-                      <span>{b.title.toUpperCase()}</span>
-                      <span>R$ {b.price.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-2 flex justify-between items-end">
-                  <span className="font-headline text-xl text-primary">TOTAL FINAL</span>
-                  <div className="text-right">
-                    <span className="text-primary font-headline text-3xl">R$ {totalWithOrderBumps.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botões de Ação no Final do Scroll */}
-              <div className="space-y-3 pt-4 pb-8">
-                <Button 
-                  className="w-full h-20 text-2xl font-bold bg-primary rounded-full shadow-2xl pulse-button"
-                  onClick={handleFinishCheckout}
-                  disabled={!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")}
-                >
-                  GERAR PIX
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full text-primary font-bold uppercase text-xs" 
-                  onClick={() => setShowCheckoutModal(false)}
-                >
-                  VOLTAR
-                </Button>
+              <div className="space-y-2">
+                <Label className="text-primary font-bold">E-MAIL</Label>
+                <input 
+                  type="email"
+                  placeholder="exemplo@email.com" 
+                  className="w-full h-12 border-2 rounded-xl px-4 focus:outline-none focus:border-primary transition-colors"
+                  value={checkoutData.email}
+                  onChange={(e) => setCheckoutData({ ...checkoutData, email: e.target.value })}
+                />
               </div>
             </div>
-          </ScrollArea>
+
+            {/* Order Bumps */}
+            <div className="space-y-4">
+              <h3 className="font-headline text-xl text-primary uppercase">COMPLETE SEU PEDIDO</h3>
+              <div className="space-y-3">
+                {orderBumps.map((bump) => (
+                  <div 
+                    key={bump.id} 
+                    className={cn(
+                      "p-4 border-2 rounded-2xl flex items-center gap-4 transition-all cursor-pointer",
+                      bump.selected ? "border-primary bg-primary/5" : "border-primary/10 hover:border-primary/20"
+                    )}
+                    onClick={() => setOrderBumps(orderBumps.map(b => b.id === bump.id ? { ...b, selected: !b.selected } : b))}
+                  >
+                    <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-6 h-6 rounded-md" />
+                    <div className="flex-1">
+                      <p className="text-primary font-bold text-sm leading-tight">{bump.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{bump.description}</p>
+                    </div>
+                    <span className="text-primary font-headline text-lg">R$ {bump.price.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Resumo Final do Pedido */}
+            <div className="bg-primary/5 p-6 rounded-3xl border-2 border-primary/10 space-y-4">
+              <h4 className="font-headline text-xl text-primary uppercase border-b border-primary/10 pb-2">RESUMO DO PEDIDO</h4>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold text-primary/70">
+                  <span>{totalQuantity}X FIGURINHAS PERSONALIZADAS</span>
+                  <span>R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
+                </div>
+                
+                {pricing.savings > 0 && (
+                  <div className="flex justify-between text-xs font-bold text-accent">
+                    <span>DESCONTO PROGRESSIVO</span>
+                    <span>- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
+
+                {orderBumps.filter(b => b.selected).map(b => (
+                  <div key={b.id} className="flex justify-between text-xs font-bold text-primary/70">
+                    <span>{b.title.toUpperCase()}</span>
+                    <span>R$ {b.price.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 flex justify-between items-end">
+                <span className="font-headline text-xl text-primary">TOTAL FINAL</span>
+                <div className="text-right">
+                  <span className="text-primary font-headline text-3xl">R$ {totalWithOrderBumps.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Botões de Ação no Final do Scroll */}
+            <div className="space-y-4 pt-4 pb-8">
+              <Button 
+                className="w-full h-20 text-2xl font-bold bg-primary rounded-full shadow-2xl pulse-button"
+                onClick={handleFinishCheckout}
+                disabled={!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")}
+              >
+                GERAR PIX
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full h-12 text-primary font-bold uppercase text-xs" 
+                onClick={() => setShowCheckoutModal(false)}
+              >
+                VOLTAR
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1040,3 +1037,4 @@ export default function QuizPage() {
     </div>
   );
 }
+
