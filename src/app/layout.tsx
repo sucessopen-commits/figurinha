@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Figurinha Craque | Crie sua Figurinha Personalizada',
@@ -20,6 +21,15 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Anton&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased selection:bg-primary selection:text-white">
+        <Script id="utmify-pixel-config" strategy="afterInteractive">
+          {`window.pixelId = "6a2640ac1c920b5a67171d35";`}
+        </Script>
+        <Script 
+          src="https://cdn.utmify.com.br/scripts/pixel/pixel.js" 
+          strategy="afterInteractive" 
+          async 
+          defer 
+        />
         <FirebaseClientProvider>
           {children}
         </FirebaseClientProvider>
