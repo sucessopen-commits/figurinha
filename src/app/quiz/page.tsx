@@ -89,6 +89,10 @@ export default function QuizPage() {
   const [flyImage, setFlyImage] = useState<string | null>(null);
   const [showFlySuccess, setShowFlySuccess] = useState(false);
 
+  // VSL Timer States
+  const [vslTimer, setVslTimer] = useState(20);
+  const [isVslButtonEnabled, setIsVslButtonEnabled] = useState(false);
+
   const [formData, setFormData] = useState<QuizData>({
     childName: "",
     birthDate: "",
@@ -154,6 +158,21 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (step === 7) {
+      // VSL Lock Timer
+      setVslTimer(20);
+      setIsVslButtonEnabled(false);
+      const timerInterval = setInterval(() => {
+        setVslTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerInterval);
+            setIsVslButtonEnabled(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Processing text effect
       const phrases = [
         "Ajustando uniforme...",
         "Preparando o estilo da figurinha...",
@@ -162,11 +181,15 @@ export default function QuizPage() {
         "Quase pronto para o campo!",
       ];
       let i = 0;
-      const interval = setInterval(() => {
+      const textInterval = setInterval(() => {
         setProcessingText(phrases[i % phrases.length]);
         i++;
       }, 2500);
-      return () => clearInterval(interval);
+
+      return () => {
+        clearInterval(timerInterval);
+        clearInterval(textInterval);
+      };
     }
   }, [step]);
 
@@ -178,7 +201,7 @@ export default function QuizPage() {
         if (isExtra) {
           setCurrentExtraData({ ...currentExtraData, photoDataUri: reader.result as string });
         } else {
-          setFormData({ ...formData, photoDataUri: reader.result as string });
+          setFormData((prev) => ({ ...prev, photoDataUri: reader.result as string }));
         }
       };
       reader.readAsDataURL(file);
@@ -226,7 +249,7 @@ export default function QuizPage() {
     if (isExtra) {
       setCurrentExtraData({ ...currentExtraData, birthDate: formattedValue });
     } else {
-      setFormData({ ...formData, birthDate: formattedValue });
+      setFormData((prev) => ({ ...prev, birthDate: formattedValue }));
     }
   };
 
@@ -392,7 +415,7 @@ export default function QuizPage() {
                       placeholder="Ex: Miguel Santos"
                       className="h-12 border-2 focus:ring-primary rounded-xl w-full"
                       value={formData.childName}
-                      onChange={(e) => setFormData({ ...formData, childName: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, childName: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -422,7 +445,7 @@ export default function QuizPage() {
                       inputMode="numeric"
                       placeholder="Ex: 20/05/2018"
                       className="h-12 border-2 focus:ring-primary rounded-xl w-full"
-                      value={formData.birthDate}
+                      value={formData.birthDate || ""}
                       onChange={handleDateChange}
                     />
                   </div>
@@ -433,8 +456,8 @@ export default function QuizPage() {
                       type="email"
                       placeholder="seu@email.com"
                       className="h-12 border-2 focus:ring-primary rounded-xl w-full"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      value={formData.email || ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -471,7 +494,7 @@ export default function QuizPage() {
                       placeholder="Ex: Flamengo, Palmeiras, Real Madrid..."
                       className="h-12 border-2 focus:ring-primary rounded-xl w-full"
                       value={formData.club}
-                      onChange={(e) => setFormData({ ...formData, club: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, club: e.target.value }))}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -481,7 +504,7 @@ export default function QuizPage() {
                         type="number"
                         className="h-12 border-2 rounded-xl w-full"
                         value={formData.weight}
-                        onChange={(e) => setFormData({ ...formData, weight: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, weight: parseInt(e.target.value) || 0 }))}
                       />
                     </div>
                     <div className="space-y-2">
@@ -490,7 +513,7 @@ export default function QuizPage() {
                         type="number"
                         className="h-12 border-2 rounded-xl w-full"
                         value={formData.height}
-                        onChange={(e) => setFormData({ ...formData, height: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, height: parseInt(e.target.value) || 0 }))}
                       />
                     </div>
                   </div>
@@ -573,7 +596,7 @@ export default function QuizPage() {
               <div className="space-y-8 py-4 animate-in fade-in duration-500 text-center">
                 <h2 className="font-headline text-3xl text-primary uppercase break-words">CARREGANDO FOTO</h2>
                 <div className="relative w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] mx-auto rounded-[24px] overflow-hidden bg-primary/5 border-2 border-primary/10">
-                   {formData.photoDataUri && <Image src={formData.photoDataUri} alt="Analyzing" fill className="object-cover" />}
+                   <Image src="https://media.tenor.com/COM78THbePQAAAAM/neymar.gif" alt="Analyzing" fill className="object-cover" unoptimized />
                 </div>
                 <p className="text-primary font-bold text-base sm:text-lg italic break-words">“Esse tem cara de jogador caro hein”</p>
                 <Progress value={photoLoadingProgress} className="h-2 bg-primary/10" />
@@ -619,12 +642,13 @@ export default function QuizPage() {
                   <p className="text-muted-foreground text-[10px] sm:text-xs font-bold break-words uppercase">Não saia dessa tela, leva até 2 minutos.</p>
                 </div>
 
-                <div className="relative aspect-[9/16] w-full max-w-[260px] mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 flex flex-col items-center justify-center shadow-lg">
-                  <div className="absolute top-4 left-4 right-4 bg-primary/10 py-2 rounded-xl z-10">
-                    <p className="text-[8px] sm:text-[10px] text-primary font-bold uppercase tracking-widest break-words px-2">ASSISTA ENQUANTO FICA PRONTO</p>
-                  </div>
-                  <Play className="text-white fill-white w-10 h-10 sm:w-12 sm:h-12" />
-                  <p className="text-primary font-headline text-xl sm:text-xl uppercase opacity-40 mt-4 break-words">ESPAÇO RESERVADO PARA VSL</p>
+                <div className="relative aspect-video w-full max-w-full mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 shadow-lg">
+                  <iframe 
+                    src="https://sucessopen.wistia.com/s/0ut8tsf1857d81h" 
+                    allow="autoplay; fullscreen" 
+                    allowFullScreen 
+                    className="absolute inset-0 w-full h-full"
+                  />
                 </div>
 
                 <div className="space-y-6">
@@ -659,10 +683,11 @@ export default function QuizPage() {
                   <p className="text-primary font-bold text-sm italic break-words">{processingText}</p>
                   <Progress value={loadingProgress} className="h-2 bg-primary/10" />
                   <Button 
-                    className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button whitespace-normal"
+                    className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button whitespace-normal disabled:opacity-50 disabled:grayscale"
                     onClick={() => setStep(8)}
+                    disabled={!isVslButtonEnabled}
                   >
-                    RECEBER AGORA!
+                    {isVslButtonEnabled ? "RECEBER AGORA!" : `LIBERANDO EM ${vslTimer}s...`}
                   </Button>
                 </div>
               </div>
