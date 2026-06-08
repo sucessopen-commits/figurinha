@@ -176,7 +176,7 @@ export default function QuizPage() {
 
       const fallbackTimer = setTimeout(() => {
         setShowVideoFallback(true);
-      }, 8000);
+      }, 5000);
 
       const phrases = [
         "Ajustando uniforme...",
@@ -354,7 +354,7 @@ export default function QuizPage() {
       {isFlying && flyImage && (
         <div className="fixed z-[999] pointer-events-none animate-fly-to-cart" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
           <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-2xl">
-            <Image src={flyImage} alt="Fly" fill className="object-cover" />
+            {flyImage && <Image src={flyImage} alt="Fly" fill className="object-cover" />}
           </div>
         </div>
       )}
@@ -640,41 +640,40 @@ export default function QuizPage() {
             )}
 
             {step === 7 && (
-              <div className="space-y-8 animate-in fade-in duration-500 text-center max-w-full overflow-x-hidden">
+              <div className="space-y-10 animate-in fade-in duration-500 text-center max-w-full overflow-x-hidden flex flex-col items-center">
                 <div className="space-y-2">
                   <h2 className="font-headline text-2xl sm:text-3xl text-primary uppercase leading-tight break-words">GERANDO SUA FIGURINHA</h2>
                   <p className="text-muted-foreground text-[10px] sm:text-xs font-bold break-words uppercase">Não saia dessa tela, leva até 2 minutos.</p>
                 </div>
 
-                <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-black rounded-[32px] overflow-hidden border-4 border-primary/10 shadow-2xl">
+                <div className="relative aspect-[9/16] w-full max-w-[300px] bg-black rounded-[22px] overflow-hidden border-4 border-[#111] shadow-2xl">
                   {/* Vimeo Video Embed */}
                   <iframe 
                     src="https://player.vimeo.com/video/1199308861?badge=0&autopause=0&player_id=0&app_id=58479" 
                     title="Video Player"
                     allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
                     allowFullScreen 
-                    className="absolute inset-0 w-full h-full"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
-                  {showVideoFallback && (
-                    <div className="absolute inset-x-0 bottom-4 px-4">
-                      <Button 
-                        variant="secondary"
-                        size="sm"
-                        className="w-full h-10 text-[10px] uppercase font-bold gap-2 shadow-2xl bg-white/90 hover:bg-white"
-                        onClick={() => window.open('https://vimeo.com/1199308861?share=copy&fl=sv&fe=ci', '_blank')}
-                      >
-                        <ExternalLink className="w-3 h-3" /> Abrir Vídeo Externo
-                      </Button>
-                    </div>
-                  )}
+                  {/* Floating Action Button inside Player */}
+                  <div className="absolute inset-x-0 bottom-4 px-4 flex justify-center">
+                    <Button 
+                      variant="secondary"
+                      size="sm"
+                      className="w-full max-w-[240px] h-11 text-[11px] uppercase font-bold gap-2 shadow-lg bg-white/95 hover:bg-white text-primary rounded-full"
+                      onClick={() => window.open('https://vimeo.com/1199308861?share=copy&fl=sv&fe=ci', '_blank')}
+                    >
+                      <ExternalLink className="w-3 h-3" /> Abrir Vídeo Externo
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8 w-full mt-4">
                   <h3 className="font-headline text-2xl sm:text-3xl text-primary uppercase leading-none tracking-tight break-words">
                     ALÉM DA FIGURINHA, VOCÊ TAMBÉM CONCORRE A:
                   </h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-3 w-full max-w-[400px] mx-auto">
                     <div className="bg-yellow-100 border-2 border-yellow-400 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] shadow-md flex items-center gap-3 sm:gap-4 text-left box-border overflow-hidden">
                         <Shirt className="w-6 h-6 text-primary shrink-0" />
                         <div className="flex flex-col min-w-0">
@@ -689,7 +688,7 @@ export default function QuizPage() {
                     </div>
                   </div>
 
-                  <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col items-center justify-center gap-1 box-border overflow-hidden">
+                  <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col items-center justify-center gap-1 box-border overflow-hidden max-w-[400px] mx-auto">
                     <div className="flex items-center gap-2 max-w-full">
                       <CalendarDays className="w-4 h-4 text-primary shrink-0" />
                       <p className="text-primary font-bold text-[10px] sm:text-xs uppercase break-words leading-tight">O sorteio será realizado no dia 11/06/2026 às 15:00 horas.</p>
@@ -697,7 +696,7 @@ export default function QuizPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 w-full pt-4">
                   <p className="text-primary font-bold text-sm italic break-words">{processingText}</p>
                   <Progress value={loadingProgress} className="h-2 bg-primary/10" />
                   <Button 
