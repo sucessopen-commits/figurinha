@@ -30,6 +30,14 @@ export default function RootLayout({
           async 
           defer 
         />
+        <Script
+          src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+          data-utmify-prevent-xcod-sck
+          data-utmify-prevent-subids
+          strategy="afterInteractive"
+          async
+          defer
+        />
         <FirebaseClientProvider>
           {children}
         </FirebaseClientProvider>
