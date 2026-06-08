@@ -642,9 +642,10 @@ export default function QuizPage() {
                   <p className="text-muted-foreground text-[10px] sm:text-xs font-bold break-words uppercase">Não saia dessa tela, leva até 2 minutos.</p>
                 </div>
 
-                <div className="relative aspect-video w-full max-w-full mx-auto bg-muted rounded-3xl overflow-hidden border-4 border-primary/20 shadow-lg">
+                <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-black rounded-[32px] overflow-hidden border-4 border-primary/10 shadow-2xl">
                   <iframe 
-                    src="https://sucessopen.wistia.com/s/0ut8tsf1857d81h" 
+                    src="https://fast.wistia.net/embed/iframe/0ut8tsf1857d81h?videoFoam=true" 
+                    title="Video Player"
                     allow="autoplay; fullscreen" 
                     allowFullScreen 
                     className="absolute inset-0 w-full h-full"
@@ -865,8 +866,8 @@ export default function QuizPage() {
                      </div>
                    )}
                    <div className="flex justify-between text-lg sm:text-xl pt-2 mt-2 border-t border-primary/10 gap-2 items-end">
-                      <span className="text-primary font-headline uppercase leading-none">TOTAL:</span>
-                      <span className="text-primary font-headline leading-none whitespace-nowrap">R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
+                      <span className="text-primary font-headline uppercase">TOTAL:</span>
+                      <span className="text-primary font-headline whitespace-nowrap">R$ {pricing.total.toFixed(2).replace('.', ',')}</span>
                    </div>
                 </div>
 
