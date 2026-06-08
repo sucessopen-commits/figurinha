@@ -272,7 +272,7 @@ export default function QuizPage() {
     const quantity = totalQuantity || 1;
     const checkoutUrl = checkoutLinks[quantity] || checkoutLinks[1];
 
-    const checkoutId = `${Date.now()}-${formData.email.split('@')[0] || 'anonymous'}`;
+    const checkoutId = `${Date.now()}-${formData.email?.split('@')[0] || 'anonymous'}`;
     const pricing = getPricingInfo(totalQuantity);
     
     setDoc(doc(firestore, "checkouts", checkoutId), {
@@ -294,7 +294,7 @@ export default function QuizPage() {
   };
 
   const handleAddExtraSticker = () => {
-    if (!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10) return;
+    if (!currentExtraData.childName || !currentExtraData.photoDataUri || (currentExtraData.birthDate?.length || 0) < 10) return;
     setStep(11);
   };
 
@@ -434,14 +434,14 @@ export default function QuizPage() {
                       placeholder="seu@email.com"
                       className="h-12 border-2 focus:ring-primary rounded-xl w-full"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData.email, email: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="flex flex-col gap-3">
                   <Button 
                     className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
-                    disabled={formData.birthDate.length < 10 || !formData.email.includes("@")}
+                    disabled={(formData.birthDate?.length || 0) < 10 || !formData.email?.includes("@")}
                     onClick={() => setStep(3)}
                   >
                     PRÓXIMO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
@@ -763,7 +763,7 @@ export default function QuizPage() {
                 <div className="flex flex-col gap-3">
                   <Button 
                     className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" 
-                    disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
+                    disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || (currentExtraData.birthDate?.length || 0) < 10 || isFlying}
                     onClick={handleAddExtraSticker}
                   >
                     ADICIONAR AO CARRINHO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
