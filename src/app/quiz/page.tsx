@@ -368,6 +368,16 @@ export default function QuizPage() {
     const orderBumpsTotal = orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
     const checkoutId = `${Date.now()}-${checkoutData.email.split('@')[0]}`;
     
+    const checkoutLinks: Record<number, string> = {
+      1: "https://compraonlinesegurada.org.ua/c/6e428a3a58",
+      2: "https://compraonlinesegurada.org.ua/c/07bd6c3368",
+      3: "https://compraonlinesegurada.org.ua/c/7d5eeddd1d",
+      4: "https://compraonlinesegurada.org.ua/c/2e051724fe"
+    };
+
+    const quantity = totalQuantity || 1;
+    const checkoutUrl = checkoutLinks[quantity] || checkoutLinks[1];
+
     setDoc(doc(firestore, "checkouts", checkoutId), {
       checkoutName: checkoutData.name,
       checkoutWhatsapp: checkoutData.whatsapp,
@@ -375,10 +385,13 @@ export default function QuizPage() {
       cartQuantity: totalQuantity,
       selectedOrderBumps: orderBumps.filter(b => b.selected).map(b => b.id),
       cartTotal: pricing.total + orderBumpsTotal,
-      checkoutStatus: "ready_for_payment"
+      checkoutStatus: "redirected_to_checkout",
+      checkoutUrl,
+      redirectedAt: new Date().toISOString()
     }, { merge: true });
 
-    alert("Redirecionando para pagamento via PIX...");
+    // Perform redirection to external checkout
+    window.location.href = checkoutUrl;
   };
 
   const handleAddExtraSticker = () => {
@@ -529,7 +542,7 @@ export default function QuizPage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg order-first" 
                     disabled={formData.birthDate.length < 10 || !formData.email.includes("@")}
                     onClick={() => setStep(3)}
                   >
@@ -586,7 +599,7 @@ export default function QuizPage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg order-first" 
                     disabled={!formData.club} 
                     onClick={() => setStep(4)}
                   >
@@ -642,7 +655,7 @@ export default function QuizPage() {
 
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal order-first" 
                     disabled={!formData.photoDataUri}
                     onClick={() => setStep(5)}
                   >
@@ -688,7 +701,7 @@ export default function QuizPage() {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <Button className="w-full h-auto py-4 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" onClick={startGeneration}>
+                  <Button className="w-full h-auto py-4 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal order-first" onClick={startGeneration}>
                     SIM, GERAR FIGURINHA ⚽
                   </Button>
                   <button 
@@ -1027,7 +1040,7 @@ export default function QuizPage() {
             
             {/* PRÉVIA VISUAL DO PRODUTO */}
             <div className="flex flex-col items-center gap-4">
-              <p className="text-primary font-bold text-[9px] sm:text-[10px] uppercase tracking-widest opacity-60 break-words">Sua Figurinha</p>
+              <p className="text-primary font-bold text-[9px] sm:text-[10px] uppercase tracking-widest opacity-60 break-words">SUA FIGURINHA</p>
               <div className="relative w-[130px] sm:w-[160px] aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border-4 border-primary/10">
                 <Image 
                   src={result || formData.photoDataUri || "https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png"} 
@@ -1037,9 +1050,9 @@ export default function QuizPage() {
                   priority
                 />
               </div>
-              <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit max-w-full overflow-hidden">
+              <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit max-w-full overflow-hidden min-w-fit border-2 border-primary/10">
                 <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest truncate">{totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+                <span className="text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap">🛒 {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
               </div>
             </div>
 
