@@ -174,7 +174,6 @@ export default function QuizPage() {
         });
       }, 1000);
 
-      // Show fallback after 8 seconds if user hasn't interacted
       const fallbackTimer = setTimeout(() => {
         setShowVideoFallback(true);
       }, 8000);
@@ -648,11 +647,11 @@ export default function QuizPage() {
                 </div>
 
                 <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-black rounded-[32px] overflow-hidden border-4 border-primary/10 shadow-2xl">
-                  {/* Wistia Video Embed */}
+                  {/* Vimeo Video Embed */}
                   <iframe 
-                    src="https://fast.wistia.net/embed/iframe/0ut8tsf1857d81h?videoFoam=true" 
+                    src="https://player.vimeo.com/video/1199308861?badge=0&autopause=0&player_id=0&app_id=58479" 
                     title="Video Player"
-                    allow="autoplay; fullscreen" 
+                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write" 
                     allowFullScreen 
                     className="absolute inset-0 w-full h-full"
                   />
@@ -662,7 +661,7 @@ export default function QuizPage() {
                         variant="secondary"
                         size="sm"
                         className="w-full h-10 text-[10px] uppercase font-bold gap-2 shadow-2xl bg-white/90 hover:bg-white"
-                        onClick={() => window.open('https://sucessopen.wistia.com/s/0ut8tsf1857d81h', '_blank')}
+                        onClick={() => window.open('https://vimeo.com/1199308861?share=copy&fl=sv&fe=ci', '_blank')}
                       >
                         <ExternalLink className="w-3 h-3" /> Abrir Vídeo Externo
                       </Button>
