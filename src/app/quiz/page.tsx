@@ -15,19 +15,15 @@ import {
   Loader2, 
   DollarSign, 
   CheckCircle2, 
-  ShieldCheck, 
   ImageIcon,
   Play,
   Shirt,
   Plus,
   CalendarDays,
-  X,
-  Trophy,
   ShoppingCart
 } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
 import { doc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
@@ -44,15 +40,6 @@ type QuizData = StickerData & {
   email: string;
 };
 
-type OrderBump = {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  selected: boolean;
-  image: string;
-};
-
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 
 const BASE_PRICE_PER_UNIT = 12.90;
@@ -66,13 +53,13 @@ const getPricingInfo = (qty: number) => {
     total = 12.90;
     savings = 0;
   } else if (qty === 2) {
-    total = 20.64; // 20% OFF do total
+    total = 20.64;
     savings = fullPrice - total;
   } else if (qty === 3) {
-    total = 23.22; // 40% OFF do total
+    total = 23.22;
     savings = fullPrice - total;
   } else if (qty === 4) {
-    total = 25.53; // ~50.5% OFF
+    total = 25.53;
     savings = fullPrice - total;
   }
 
@@ -85,17 +72,14 @@ const getPricingInfo = (qty: number) => {
 };
 
 export default function QuizPage() {
-  const router = useRouter();
   const firestore = useFirestore();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [photoLoadingProgress, setPhotoLoadingProgress] = useState(0);
   const [extraLoadingProgress, setExtraLoadingProgress] = useState(0);
-  const [result, setResult] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [pendingUploadType, setPendingUploadType] = useState<'gallery' | 'camera' | null>(null);
   const [processingText, setProcessingText] = useState("Iniciando processamento...");
   
@@ -125,60 +109,6 @@ export default function QuizPage() {
     photoDataUri: "",
   });
 
-  // Checkout State
-  const [checkoutData, setCheckoutData] = useState({
-    name: "",
-    whatsapp: "",
-    email: formData.email
-  });
-
-  const [orderBumps, setOrderBumps] = useState<OrderBump[]>([
-    { 
-      id: "ob1", 
-      title: "Receber via WhatsApp", 
-      description: "Receba suas compras e acessos pelo seu WhatsApp.", 
-      price: 3.50, 
-      selected: false,
-      image: "https://i.postimg.cc/wTPyFS8C/image.png"
-    },
-    { 
-      id: "ob2", 
-      title: "Pacote de figurinha para impressão", 
-      description: "Deixe a experiência ainda mais incrível e realista entregando a figurinha dentro de um pacotinho.", 
-      price: 4.00, 
-      selected: false,
-      image: "https://i.postimg.cc/5yDg3NpR/Captura-de-tela-2026-06-06-093343.png"
-    },
-    { 
-      id: "ob3", 
-      title: "Arquivo com TODAS figurinhas da COPA 2026", 
-      description: "Cansada de gastar quase 10 reais por pacotinho? Aqui te entregamos TODO o álbum pelo preço de 1 pacotinho.", 
-      price: 9.00, 
-      selected: false,
-      image: "https://i.postimg.cc/rshsXK7z/orderbump-todas-fig.png"
-    },
-    { 
-      id: "ob4", 
-      title: "Figurinha do Neymar", 
-      description: "Imagina a emoção do pequeno ao abrir o mesmo pacotinho que vem a figurinha dele e do Neymar JUNTOS.", 
-      price: 5.00, 
-      selected: false,
-      image: "https://i.postimg.cc/x8djR9qz/d-ZHVBFGDOL9ehq-EGt-Eh5CUM0hs0Llz-TQPGo-MSx-Z3.png"
-    },
-    { 
-      id: "ob5", 
-      title: "Aumente suas chances em 10x", 
-      description: "Aumente suas chances no sorteio dia 11/06/2026 às 15:00.", 
-      price: 7.00, 
-      selected: false,
-      image: "https://i.postimg.cc/SsgkjHVx/Vb-Pk-M6xq-JKHrb-BJT9L3pre-Q1a-UR6Kw5mc1d-MQZo6.png"
-    },
-  ]);
-
-  useEffect(() => {
-    setCheckoutData(prev => ({ ...prev, email: formData.email }));
-  }, [formData.email]);
-
   useEffect(() => {
     if (step === 5) {
       setPhotoLoadingProgress(0);
@@ -201,7 +131,6 @@ export default function QuizPage() {
     }
   }, [step]);
 
-  // Loading process for extra stickers (Step 11)
   useEffect(() => {
     if (step === 11) {
       setExtraLoadingProgress(0);
@@ -302,17 +231,6 @@ export default function QuizPage() {
     }
   };
 
-  const formatWhatsapp = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length <= 11) {
-      return numbers
-        .replace(/^(\d{2})(\d)/g, "($1) $2")
-        .replace(/(\d{5})(\d)/, "$1-$2")
-        .slice(0, 15);
-    }
-    return numbers.slice(0, 11);
-  };
-
   const startGeneration = async () => {
     setLoading(true);
     setStep(7);
@@ -328,7 +246,7 @@ export default function QuizPage() {
     }, 600);
 
     try {
-      const { stickerMediaUri } = await generateSoccerSticker({
+      await generateSoccerSticker({
         photoDataUri: formData.photoDataUri,
         childName: formData.childName,
         birthDate: formData.birthDate,
@@ -336,7 +254,6 @@ export default function QuizPage() {
         weight: formData.weight,
         height: formData.height,
       });
-      setResult(stickerMediaUri);
       setLoadingProgress(100);
     } catch (error) {
       console.error("Failed to generate sticker", error);
@@ -345,29 +262,8 @@ export default function QuizPage() {
     }
   };
 
-  const handleOpenCheckout = () => {
-    setShowCheckoutModal(true);
+  const handleFinalRedirect = () => {
     const pricing = getPricingInfo(totalQuantity);
-    const checkoutId = `${Date.now()}-${formData.email.split('@')[0]}`;
-    
-    setDoc(doc(firestore, "checkouts", checkoutId), {
-      checkoutEmail: formData.email,
-      cartQuantity: totalQuantity,
-      cartTotal: pricing.total,
-      checkoutStartedAt: new Date().toISOString(),
-      checkoutStatus: "started"
-    });
-  };
-
-  const handleFinishCheckout = () => {
-    if (!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")) {
-      return;
-    }
-    
-    const pricing = getPricingInfo(totalQuantity);
-    const orderBumpsTotal = orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
-    const checkoutId = `${Date.now()}-${checkoutData.email.split('@')[0]}`;
-    
     const checkoutLinks: Record<number, string> = {
       1: "https://compraonlinesegurada.org.ua/c/6e428a3a58",
       2: "https://compraonlinesegurada.org.ua/c/07bd6c3368",
@@ -378,19 +274,24 @@ export default function QuizPage() {
     const quantity = totalQuantity || 1;
     const checkoutUrl = checkoutLinks[quantity] || checkoutLinks[1];
 
+    // Save intention to Firestore
+    const checkoutId = `${Date.now()}-${formData.email.split('@')[0] || 'anonymous'}`;
     setDoc(doc(firestore, "checkouts", checkoutId), {
-      checkoutName: checkoutData.name,
-      checkoutWhatsapp: checkoutData.whatsapp,
-      checkoutEmail: checkoutData.email,
+      childName: formData.childName,
+      birthDate: formData.birthDate,
+      email: formData.email,
+      club: formData.club,
+      weight: formData.weight,
+      height: formData.height,
+      extraStickers: extraStickers,
       cartQuantity: totalQuantity,
-      selectedOrderBumps: orderBumps.filter(b => b.selected).map(b => b.id),
-      cartTotal: pricing.total + orderBumpsTotal,
-      checkoutStatus: "redirected_to_checkout",
+      cartTotal: pricing.total,
       checkoutUrl,
+      checkoutStatus: "redirected_to_external_checkout",
       redirectedAt: new Date().toISOString()
-    }, { merge: true });
+    });
 
-    // Perform redirection to external checkout
+    // Redirection
     window.location.href = checkoutUrl;
   };
 
@@ -421,10 +322,9 @@ export default function QuizPage() {
   };
 
   const pricing = getPricingInfo(totalQuantity);
-  const totalWithOrderBumps = pricing.total + orderBumps.reduce((acc, b) => acc + (b.selected ? b.price : 0), 0);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-x-hidden max-w-full quiz-page-container">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative overflow-x-hidden max-w-full">
       
       {isFlying && flyImage && (
         <div className="fixed z-[999] pointer-events-none animate-fly-to-cart" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
@@ -765,7 +665,7 @@ export default function QuizPage() {
                     className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button whitespace-normal"
                     onClick={() => setStep(8)}
                   >
-                    RECEBER FIGURINHA
+                    RECEBER AGORA!
                   </Button>
                 </div>
               </div>
@@ -798,8 +698,8 @@ export default function QuizPage() {
                     </div>
                   </div>
 
-                  <Button className="w-full h-auto py-5 text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button whitespace-normal" onClick={handleOpenCheckout}>
-                    RECEBER MINHA FIGURINHA
+                  <Button className="w-full h-auto py-5 text-xl font-bold bg-primary rounded-full shadow-2xl pulse-button whitespace-normal" onClick={handleFinalRedirect}>
+                    RECEBER AGORA!
                   </Button>
                   
                   <Button variant="outline" className="w-full h-auto py-3 rounded-full border-primary text-primary font-bold whitespace-normal text-sm sm:text-base" onClick={() => setShowUpsellModal(true)}>
@@ -863,13 +763,27 @@ export default function QuizPage() {
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full h-auto py-5 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal"
-                  disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
-                  onClick={handleAddExtraSticker}
-                >
-                  <Plus className="mr-2 w-5 h-5 shrink-0" /> ADICIONAR AO CARRINHO
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal order-first" 
+                    disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
+                    onClick={handleAddExtraSticker}
+                  >
+                    PRÓXIMO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
+                  </Button>
+                  <button 
+                    className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
+                    onClick={() => {
+                      if (extraStickers.length > 0) {
+                        setStep(10);
+                      } else {
+                        setStep(8);
+                      }
+                    }}
+                  >
+                    VOLTAR
+                  </button>
+                </div>
               </div>
             )}
 
@@ -934,16 +848,29 @@ export default function QuizPage() {
                    </div>
                 </div>
 
-                <Button className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-lg pulse-button whitespace-normal" onClick={handleOpenCheckout}>
-                  FINALIZAR PEDIDO <ChevronRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <Button className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-lg pulse-button whitespace-normal order-first" onClick={handleFinalRedirect}>
+                    RECEBER AGORA!
+                  </Button>
+                  <button 
+                    className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
+                    onClick={() => {
+                      if (extraStickers.length > 0) {
+                        setStep(9);
+                      } else {
+                        setStep(8);
+                      }
+                    }}
+                  >
+                    VOLTAR
+                  </button>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Warning Modal */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="w-[calc(100vw-32px)] max-w-[420px] max-h-[92vh] rounded-[24px] sm:rounded-[32px] p-0 border-none bg-white shadow-2xl flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-6 -webkit-overflow-scrolling-touch">
@@ -959,7 +886,6 @@ export default function QuizPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Upsell Modal */}
       <Dialog open={showUpsellModal} onOpenChange={setShowUpsellModal}>
         <DialogContent className="w-[calc(100vw-32px)] max-w-[420px] max-h-[92vh] rounded-[24px] sm:rounded-[32px] p-0 border-none bg-white shadow-2xl flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-4 -webkit-overflow-scrolling-touch box-border">
@@ -999,9 +925,10 @@ export default function QuizPage() {
             </div>
 
             <div className="bg-accent/10 p-4 rounded-2xl mb-4 text-center box-border overflow-hidden">
-               <p className="text-accent font-bold text-[10px] sm:text-xs break-words uppercase">
-                  🛒 {totalQuantity} {totalQuantity === 1 ? 'figurinha' : 'figurinhas'} no carrinho
-               </p>
+               <div className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-2 rounded-full mx-auto w-fit border-2 border-primary/10">
+                 <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
+                 <span className="text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap">🛒 {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+               </div>
                {pricing.savings > 0 && (
                  <p className="text-accent font-headline text-base sm:text-lg uppercase break-words leading-tight mt-1">Economia de R$ {pricing.savings.toFixed(2).replace('.', ',')}</p>
                )}
@@ -1017,153 +944,8 @@ export default function QuizPage() {
                 } 
               }}
             >
-              CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}
+              CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHA'}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Checkout Modal */}
-      <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
-        <DialogContent className="w-[calc(100vw-24px)] sm:w-[calc(100vw-32px)] max-w-[540px] max-h-[92vh] rounded-[24px] sm:rounded-[32px] p-0 border-none bg-white shadow-2xl flex flex-col overflow-hidden">
-          {/* Header Fixo */}
-          <div className="p-4 sm:p-6 bg-primary text-white flex justify-between items-center shrink-0">
-            <div className="min-w-0 pr-4">
-              <DialogTitle className="font-headline text-2xl sm:text-3xl uppercase leading-none break-words">FINALIZAR PEDIDO</DialogTitle>
-              <p className="text-white/80 text-[10px] sm:text-xs mt-1 break-words">Preencha seus dados para receber sua figurinha.</p>
-            </div>
-            <DialogClose className="p-2 hover:bg-white/10 rounded-full transition-colors shrink-0"><X className="w-5 h-5 sm:w-6 sm:h-6" /></DialogClose>
-          </div>
-          
-          {/* Corpo Rolável */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-6 sm:space-y-8 -webkit-overflow-scrolling-touch box-border">
-            
-            {/* PRÉVIA VISUAL DO PRODUTO */}
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-primary font-bold text-[9px] sm:text-[10px] uppercase tracking-widest opacity-60 break-words">SUA FIGURINHA</p>
-              <div className="relative w-[130px] sm:w-[160px] aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border-4 border-primary/10">
-                <Image 
-                  src={result || formData.photoDataUri || "https://i.postimg.cc/DZG3Rd0p/Chat-GPT-Image-5-de-jun-de-2026-19-49-36.png"} 
-                  alt="Sua Figurinha" 
-                  fill 
-                  className="object-contain" 
-                  priority
-                />
-              </div>
-              <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full w-fit max-w-full overflow-hidden min-w-fit border-2 border-primary/10">
-                <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap">🛒 {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
-              </div>
-            </div>
-
-            {/* Formulário do Comprador */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-primary font-bold text-xs sm:text-sm">NOME COMPLETO</Label>
-                <input 
-                  placeholder="Digite seu nome completo" 
-                  className="w-full h-12 border-2 rounded-xl px-4 focus:outline-none focus:border-primary transition-colors text-sm sm:text-base box-border"
-                  value={checkoutData.name}
-                  onChange={(e) => setCheckoutData({ ...checkoutData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-primary font-bold text-xs sm:text-sm">NÚMERO DE WHATSAPP</Label>
-                <input 
-                  placeholder="(00) 00000-0000" 
-                  className="w-full h-12 border-2 rounded-xl px-4 focus:outline-none focus:border-primary transition-colors text-sm sm:text-base box-border"
-                  value={checkoutData.whatsapp}
-                  onChange={(e) => setCheckoutData({ ...checkoutData, whatsapp: formatWhatsapp(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-primary font-bold text-xs sm:text-sm">E-MAIL</Label>
-                <input 
-                  type="email"
-                  placeholder="exemplo@email.com" 
-                  className="w-full h-12 border-2 rounded-xl px-4 focus:outline-none focus:border-primary transition-colors text-sm sm:text-base box-border"
-                  value={checkoutData.email}
-                  onChange={(e) => setCheckoutData({ ...checkoutData, email: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Order Bumps */}
-            <div className="space-y-4">
-              <h3 className="font-headline text-lg sm:text-xl text-primary uppercase break-words">COMPLETE SEU PEDIDO</h3>
-              <div className="space-y-3">
-                {orderBumps.map((bump) => (
-                  <div 
-                    key={bump.id} 
-                    className={cn(
-                      "p-3 sm:p-4 border-2 rounded-2xl flex items-center gap-3 sm:gap-4 transition-all cursor-pointer box-border overflow-hidden",
-                      bump.selected ? "border-primary bg-primary/5" : "border-primary/10 hover:border-primary/20"
-                    )}
-                    onClick={() => setOrderBumps(orderBumps.map(b => b.id === bump.id ? { ...b, selected: !b.selected } : b))}
-                  >
-                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden shrink-0 border border-primary/10">
-                      <Image src={bump.image} alt={bump.title} fill className="object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-primary font-bold text-xs sm:text-sm leading-tight truncate">{bump.title}</p>
-                      <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-2 leading-tight">{bump.description}</p>
-                      <p className="text-primary font-headline text-base sm:text-lg mt-1 whitespace-nowrap">R$ {bump.price.toFixed(2).replace('.', ',')}</p>
-                    </div>
-                    <Checkbox checked={bump.selected} onCheckedChange={() => {}} className="w-5 h-5 sm:w-6 sm:h-6 rounded-md shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Resumo Final do Pedido */}
-            <div className="bg-primary/5 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-2 border-primary/10 space-y-4 box-border overflow-hidden">
-              <h4 className="font-headline text-lg sm:text-xl text-primary uppercase border-b border-primary/10 pb-2 break-words">RESUMO DO PEDIDO</h4>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] sm:text-xs font-bold text-primary/70 gap-2">
-                  <span className="shrink-0 uppercase">{totalQuantity}X FIGURINHAS</span>
-                  <span className="whitespace-nowrap">R$ {pricing.fullPrice.toFixed(2).replace('.', ',')}</span>
-                </div>
-                
-                {pricing.savings > 0 && (
-                  <div className="flex justify-between text-[10px] sm:text-xs font-bold text-accent gap-2">
-                    <span className="shrink-0 uppercase">DESCONTO PROGRESSIVO</span>
-                    <span className="whitespace-nowrap">- R$ {pricing.savings.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                )}
-
-                {orderBumps.filter(b => b.selected).map(b => (
-                  <div key={b.id} className="flex justify-between text-[10px] sm:text-xs font-bold text-primary/70 gap-2">
-                    <span className="shrink-0 uppercase truncate">{b.title}</span>
-                    <span className="whitespace-nowrap">R$ {b.price.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-2 flex justify-between items-end gap-2">
-                <span className="font-headline text-lg sm:text-xl text-primary leading-none">TOTAL FINAL</span>
-                <div className="text-right">
-                  <span className="text-primary font-headline text-2xl sm:text-3xl leading-none whitespace-nowrap">R$ {totalWithOrderBumps.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Botões de Ação no Final do Scroll */}
-            <div className="space-y-4 pt-4 pb-8">
-              <Button 
-                className="w-full h-auto py-5 text-xl sm:text-2xl font-bold bg-primary rounded-full shadow-2xl pulse-button whitespace-normal leading-tight"
-                onClick={handleFinishCheckout}
-                disabled={!checkoutData.name || checkoutData.whatsapp.length < 14 || !checkoutData.email.includes("@")}
-              >
-                GERAR PIX
-              </Button>
-              <button 
-                className="w-full text-muted-foreground hover:text-primary font-bold uppercase text-[12px] sm:text-sm py-2 transition-colors text-center block"
-                onClick={() => setShowCheckoutModal(false)}
-              >
-                VOLTAR
-              </button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1175,7 +957,6 @@ export default function QuizPage() {
         }
         .animate-fly-to-cart { animation: fly-to-cart 0.8s ease-in-out forwards; }
         
-        /* Quiz page responsive constraints */
         .quiz-page-container {
           max-width: 100vw;
           overflow-x: hidden;
@@ -1185,3 +966,5 @@ export default function QuizPage() {
     </div>
   );
 }
+
+```
