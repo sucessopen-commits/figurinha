@@ -18,7 +18,6 @@ import {
   ImageIcon,
   Play,
   Shirt,
-  Plus,
   CalendarDays,
   ShoppingCart
 } from "lucide-react";
@@ -263,7 +262,6 @@ export default function QuizPage() {
   };
 
   const handleFinalRedirect = () => {
-    const pricing = getPricingInfo(totalQuantity);
     const checkoutLinks: Record<number, string> = {
       1: "https://compraonlinesegurada.org.ua/c/6e428a3a58",
       2: "https://compraonlinesegurada.org.ua/c/07bd6c3368",
@@ -274,8 +272,9 @@ export default function QuizPage() {
     const quantity = totalQuantity || 1;
     const checkoutUrl = checkoutLinks[quantity] || checkoutLinks[1];
 
-    // Save intention to Firestore
     const checkoutId = `${Date.now()}-${formData.email.split('@')[0] || 'anonymous'}`;
+    const pricing = getPricingInfo(totalQuantity);
+    
     setDoc(doc(firestore, "checkouts", checkoutId), {
       childName: formData.childName,
       birthDate: formData.birthDate,
@@ -291,7 +290,6 @@ export default function QuizPage() {
       redirectedAt: new Date().toISOString()
     });
 
-    // Redirection
     window.location.href = checkoutUrl;
   };
 
@@ -436,13 +434,13 @@ export default function QuizPage() {
                       placeholder="seu@email.com"
                       className="h-12 border-2 focus:ring-primary rounded-xl w-full"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData.email, email: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg order-first" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
                     disabled={formData.birthDate.length < 10 || !formData.email.includes("@")}
                     onClick={() => setStep(3)}
                   >
@@ -499,7 +497,7 @@ export default function QuizPage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg order-first" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full whitespace-normal shadow-lg" 
                     disabled={!formData.club} 
                     onClick={() => setStep(4)}
                   >
@@ -555,7 +553,7 @@ export default function QuizPage() {
 
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal order-first" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" 
                     disabled={!formData.photoDataUri}
                     onClick={() => setStep(5)}
                   >
@@ -601,7 +599,7 @@ export default function QuizPage() {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <Button className="w-full h-auto py-4 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal order-first" onClick={startGeneration}>
+                  <Button className="w-full h-auto py-4 text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" onClick={startGeneration}>
                     SIM, GERAR FIGURINHA ⚽
                   </Button>
                   <button 
@@ -626,7 +624,7 @@ export default function QuizPage() {
                     <p className="text-[8px] sm:text-[10px] text-primary font-bold uppercase tracking-widest break-words px-2">ASSISTA ENQUANTO FICA PRONTO</p>
                   </div>
                   <Play className="text-white fill-white w-10 h-10 sm:w-12 sm:h-12" />
-                  <p className="text-primary font-headline text-lg sm:text-xl uppercase opacity-40 mt-4 break-words">ESPAÇO RESERVADO PARA VSL</p>
+                  <p className="text-primary font-headline text-xl sm:text-xl uppercase opacity-40 mt-4 break-words">ESPAÇO RESERVADO PARA VSL</p>
                 </div>
 
                 <div className="space-y-6">
@@ -635,7 +633,7 @@ export default function QuizPage() {
                   </h3>
                   
                   <div className="space-y-3">
-                    <div className="bg-yellow-100/50 border-2 border-yellow-400/30 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] shadow-md flex items-center gap-3 sm:gap-4 text-left box-border overflow-hidden">
+                    <div className="bg-yellow-100 border-2 border-yellow-400 p-4 sm:p-5 rounded-[20px] sm:rounded-[24px] shadow-md flex items-center gap-3 sm:gap-4 text-left box-border overflow-hidden">
                         <Shirt className="w-6 h-6 text-primary shrink-0" />
                         <div className="flex flex-col min-w-0">
                           <p className="text-primary font-extrabold text-[12px] sm:text-sm leading-tight uppercase break-words">1 CAMISA ORIGINAL AUTOGRAFADA</p>
@@ -654,7 +652,6 @@ export default function QuizPage() {
                       <CalendarDays className="w-4 h-4 text-primary shrink-0" />
                       <p className="text-primary font-bold text-[10px] sm:text-xs uppercase break-words leading-tight">O sorteio será realizado no dia 11/06/2026 às 15:00 horas.</p>
                     </div>
-                    <p className="text-primary/60 text-[9px] uppercase font-bold break-words">Seu número da sorte será enviado após a confirmação.</p>
                   </div>
                 </div>
 
@@ -765,11 +762,11 @@ export default function QuizPage() {
 
                 <div className="flex flex-col gap-3">
                   <Button 
-                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal order-first" 
+                    className="h-auto py-4 w-full text-lg font-bold bg-primary rounded-full shadow-lg whitespace-normal" 
                     disabled={!currentExtraData.childName || !currentExtraData.photoDataUri || currentExtraData.birthDate.length < 10 || isFlying}
                     onClick={handleAddExtraSticker}
                   >
-                    PRÓXIMO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
+                    ADICIONAR AO CARRINHO <ChevronRight className="ml-2 w-5 h-5 shrink-0" />
                   </Button>
                   <button 
                     className="text-muted-foreground hover:text-primary font-bold text-sm uppercase py-1 transition-colors mx-auto"
@@ -849,7 +846,7 @@ export default function QuizPage() {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <Button className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-lg pulse-button whitespace-normal order-first" onClick={handleFinalRedirect}>
+                  <Button className="w-full h-auto py-5 text-lg sm:text-xl font-bold bg-primary rounded-full shadow-lg pulse-button whitespace-normal" onClick={handleFinalRedirect}>
                     RECEBER AGORA!
                   </Button>
                   <button 
@@ -912,7 +909,6 @@ export default function QuizPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-primary font-bold text-xs sm:text-sm leading-none break-words">{qty} {qty === 1 ? 'Figurinha' : 'Figurinhas'}</p>
                           {qty > 1 && <p className="text-accent text-[8px] sm:text-[10px] font-black uppercase mt-1 break-words">{qty === 4 ? 'MAIOR ECONOMIA' : `PACOTE COM DESCONTO`}</p>}
-                          {qty === 1 && <p className="text-muted-foreground text-[8px] sm:text-[10px] font-bold uppercase mt-1 break-words">Pedido atual</p>}
                         </div>
                      </div>
                      <div className="text-right shrink-0">
@@ -927,7 +923,7 @@ export default function QuizPage() {
             <div className="bg-accent/10 p-4 rounded-2xl mb-4 text-center box-border overflow-hidden">
                <div className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-2 rounded-full mx-auto w-fit border-2 border-primary/10">
                  <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
-                 <span className="text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap">🛒 {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'} NO CARRINHO</span>
+                 <span className="text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest whitespace-nowrap">🛒 {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}</span>
                </div>
                {pricing.savings > 0 && (
                  <p className="text-accent font-headline text-base sm:text-lg uppercase break-words leading-tight mt-1">Economia de R$ {pricing.savings.toFixed(2).replace('.', ',')}</p>
@@ -944,7 +940,7 @@ export default function QuizPage() {
                 } 
               }}
             >
-              CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHA'}
+              CONTINUAR COM {totalQuantity} {totalQuantity === 1 ? 'FIGURINHA' : 'FIGURINHAS'}
             </Button>
           </div>
         </DialogContent>
@@ -966,5 +962,3 @@ export default function QuizPage() {
     </div>
   );
 }
-
-```
