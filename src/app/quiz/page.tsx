@@ -16,10 +16,10 @@ import {
   DollarSign, 
   CheckCircle2, 
   ImageIcon,
-  Play,
   Shirt,
   CalendarDays,
-  ShoppingCart
+  ShoppingCart,
+  ExternalLink
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -92,6 +92,7 @@ export default function QuizPage() {
   // VSL Timer States
   const [vslTimer, setVslTimer] = useState(20);
   const [isVslButtonEnabled, setIsVslButtonEnabled] = useState(false);
+  const [showVideoFallback, setShowVideoFallback] = useState(false);
 
   const [formData, setFormData] = useState<QuizData>({
     childName: "",
@@ -158,9 +159,10 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (step === 7) {
-      // VSL Lock Timer
       setVslTimer(20);
       setIsVslButtonEnabled(false);
+      setShowVideoFallback(false);
+
       const timerInterval = setInterval(() => {
         setVslTimer((prev) => {
           if (prev <= 1) {
@@ -172,7 +174,11 @@ export default function QuizPage() {
         });
       }, 1000);
 
-      // Processing text effect
+      // Show fallback after 8 seconds if user hasn't interacted
+      const fallbackTimer = setTimeout(() => {
+        setShowVideoFallback(true);
+      }, 8000);
+
       const phrases = [
         "Ajustando uniforme...",
         "Preparando o estilo da figurinha...",
@@ -189,6 +195,7 @@ export default function QuizPage() {
       return () => {
         clearInterval(timerInterval);
         clearInterval(textInterval);
+        clearTimeout(fallbackTimer);
       };
     }
   }, [step]);
@@ -296,7 +303,6 @@ export default function QuizPage() {
     const checkoutUrl = checkoutLinks[quantity] || checkoutLinks[1];
 
     const checkoutId = `${Date.now()}-${formData.email?.split('@')[0] || 'anonymous'}`;
-    const pricing = getPricingInfo(totalQuantity);
     
     setDoc(doc(firestore, "checkouts", checkoutId), {
       childName: formData.childName,
@@ -307,7 +313,6 @@ export default function QuizPage() {
       height: formData.height,
       extraStickers: extraStickers,
       cartQuantity: totalQuantity,
-      cartTotal: pricing.total,
       checkoutUrl,
       checkoutStatus: "redirected_to_external_checkout",
       redirectedAt: new Date().toISOString()
@@ -643,6 +648,7 @@ export default function QuizPage() {
                 </div>
 
                 <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto bg-black rounded-[32px] overflow-hidden border-4 border-primary/10 shadow-2xl">
+                  {/* Wistia Video Embed */}
                   <iframe 
                     src="https://fast.wistia.net/embed/iframe/0ut8tsf1857d81h?videoFoam=true" 
                     title="Video Player"
@@ -650,6 +656,18 @@ export default function QuizPage() {
                     allowFullScreen 
                     className="absolute inset-0 w-full h-full"
                   />
+                  {showVideoFallback && (
+                    <div className="absolute inset-x-0 bottom-4 px-4">
+                      <Button 
+                        variant="secondary"
+                        size="sm"
+                        className="w-full h-10 text-[10px] uppercase font-bold gap-2 shadow-2xl bg-white/90 hover:bg-white"
+                        onClick={() => window.open('https://sucessopen.wistia.com/s/0ut8tsf1857d81h', '_blank')}
+                      >
+                        <ExternalLink className="w-3 h-3" /> Abrir Vídeo Externo
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">
